@@ -11,23 +11,23 @@ class Config(override var rawPointer: FxaClient.RawConfig?) : RustObject<FxaClie
     }
 
     companion object {
-        fun release(): Config? {
+        fun release(): FxaResult<Config> {
             val e = Error.ByReference()
             val cfg = FxaClient.INSTANCE.fxa_get_release_config(e)
             if (e.isSuccess()) {
-                return Config(cfg)
+                return FxaResult.fromValue(Config(cfg))
             } else {
-                return null
+                return FxaResult.fromException(FxaException.fromConsuming(e)!!)
             }
         }
 
-        fun custom(content_base: String): Config? {
+        fun custom(content_base: String): FxaResult<Config> {
             val e = Error.ByReference()
             val cfg = FxaClient.INSTANCE.fxa_get_custom_config(content_base, e)
             if (e.isSuccess()) {
-                return Config(cfg)
+                return FxaResult.fromValue(Config(cfg))
             } else {
-                return null
+                return FxaResult.fromException(FxaException.fromConsuming(e)!!)
             }
         }
     }
