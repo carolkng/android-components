@@ -7,17 +7,16 @@ package org.mozilla.samples.fxa
 import android.net.Uri
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
-import mozilla.components.service.fxa.FirefoxAccount
 import android.support.customtabs.CustomTabsIntent
 import android.view.View
-import mozilla.components.service.fxa.Config
-import mozilla.components.service.fxa.FxaClient
 import android.content.Intent
+import android.widget.NumberPicker
 import android.widget.TextView
+import mozilla.components.service.fxa.*
 
 open class MainActivity : AppCompatActivity() {
 
-    private var account: FirefoxAccount? = null
+    private var account: FirefoxAccount = null
     private var config: Config? = null
 
     companion object {
@@ -64,8 +63,13 @@ open class MainActivity : AppCompatActivity() {
         val code = url.getQueryParameter("code")
         val state = url.getQueryParameter("state")
 
-        account?.completeOAuthFlow(code, state)
-        val profile = account?.getProfile()
+        val completeOAuthFlow = account.completeOAuthFlow(code, state)
+        val profile = account.getProfile().then(object: FxaResult.OnValueListener<Profile, Profile> {
+            override fun onValue(value: Profile): FxaResult<Profile> {
+                return FxaResult.fromValue(value)
+            }
+        })
+
         return "${profile?.displayName ?: ""} ${profile?.email}"
     }
 

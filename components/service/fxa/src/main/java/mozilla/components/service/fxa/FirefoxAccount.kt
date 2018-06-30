@@ -31,14 +31,18 @@ class FirefoxAccount(override var rawPointer: FxaClient.RawFxAccount?) : RustObj
         }
     }
 
-    fun getProfile(ignoreCache: Boolean): Profile? {
+    fun getProfile(ignoreCache: Boolean): FxaResult<Profile> {
         val e = Error.ByReference()
         val p = FxaClient.INSTANCE.fxa_profile(this.validPointer(), ignoreCache, e)
         if (e.isSuccess()) {
-            return Profile(p)
+            return FxaResult.fromValue(Profile(p))
         } else {
-            return null
+            return FxaResult.fromException(FxaException.fromConsuming(e)!!)
         }
+    }
+
+    fun getProfile(): FxaResult<Profile> {
+        getProfile(false)
     }
 
     fun newAssertion(audience: String): String? {
@@ -69,10 +73,6 @@ class FirefoxAccount(override var rawPointer: FxaClient.RawFxAccount?) : RustObj
         } else {
             return null
         }
-    }
-
-    fun getProfile(): Profile? {
-        return getProfile(false)
     }
 
     fun completeOAuthFlow(code: String, state: String): OAuthInfo? {
@@ -118,3 +118,4 @@ class FirefoxAccount(override var rawPointer: FxaClient.RawFxAccount?) : RustObj
         }
     }
 }
+

@@ -14,20 +14,12 @@ class FxaResult<T>() {
     private var mValue: T? = null
     private var mError: Exception? = null
 
-    private val mListeners: ArrayList<Listener<T>>
+    private val mListeners: ArrayList<Listener<T>> = ArrayList()
 
     private interface Listener<T> {
         fun onValue(value: T?)
 
         fun onException(exception: Exception?)
-    }
-
-    /**
-     * This constructs an incomplete FxaResult. Call [.complete] or
-     * [.completeExceptionally] in order to fulfill the result.
-     */
-    init {
-        mListeners = ArrayList()
     }
 
     /**
@@ -225,7 +217,7 @@ class FxaResult<T>() {
          * This constructs a result that is completed with the specified [Exception].
          * May not be null.
          *
-         * @param error The exception used to complete the newly created result.
+         * @param exception The exception used to complete the newly created result.
          * @return The completed [FxaResult]
          */
         fun <T> fromException(exception: Exception): FxaResult<T> {
