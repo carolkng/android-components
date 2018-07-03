@@ -7,7 +7,7 @@ import java.util.ArrayList
  * FxaResult is a class that represents an asynchronous result.
  *
  * @param <T> The type of the value delivered via the FxaResult.
-</T> */
+ */
 class FxaResult<T>() {
 
     private var mComplete: Boolean = false
@@ -131,10 +131,7 @@ class FxaResult<T>() {
         mValue = value
         mComplete = true
 
-        val listeners = ArrayList(mListeners)
-        for (listener in listeners) {
-            listener.onValue(mValue)
-        }
+        ArrayList(mListeners).forEach { it.onValue(mValue) }
     }
 
     /**
@@ -157,10 +154,7 @@ class FxaResult<T>() {
         mError = exception
         mComplete = true
 
-        val listeners = ArrayList(mListeners)
-        for (listener in listeners) {
-            listener.onException(mError)
-        }
+        ArrayList(mListeners).forEach { it.onException(mError) }
     }
 
     /**
@@ -168,7 +162,7 @@ class FxaResult<T>() {
      *
      * @param <T> This is the type of the value delivered via [.onValue]
      * @param <U> This is the type of the value for the result returned from [.onValue]
-    </U></T> */
+     */
     interface OnValueListener<T, U> {
         /**
          * Called when a [FxaResult] is completed with a value. This will be
@@ -185,7 +179,7 @@ class FxaResult<T>() {
      * An interface used to deliver exceptions to listeners of a [FxaResult]
      *
      * @param <V> This is the type of the vale for the result returned from [.onException]
-    </V> */
+     */
     interface OnExceptionListener<V> {
         fun onException(exception: Exception?): FxaResult<V>?
     }
