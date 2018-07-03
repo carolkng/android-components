@@ -45,9 +45,7 @@ open class MainActivity : AppCompatActivity() {
                     account = value
                     val btn = findViewById<View>(R.id.button)
                     btn.setOnClickListener {
-                        account?.beginOAuthFlow(REDIRECT_URL, scopes, false)?.let {
-                            openAuthTab(it)
-                        }
+                        openOAuthTab()
                     }
                 }
                 return null
@@ -66,7 +64,7 @@ open class MainActivity : AppCompatActivity() {
             val code = url.getQueryParameter("code")
             val state = url.getQueryParameter("state")
 
-            val completeOAuthFlow = account?.completeOAuthFlow(code, state)
+            account?.completeOAuthFlow(code, state)
 
             account?.getProfile()!!.then(object: FxaResult.OnValueListener<Profile, Void> {
                 override fun onValue(value: Profile?): FxaResult<Void>? {
@@ -79,7 +77,7 @@ open class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun openAuthTab(url: String) {
+    private fun openTab(url: String) {
         val customTabsIntent = CustomTabsIntent.Builder()
                 .addDefaultShareMenuItem()
                 .setShowTitle(true)
@@ -87,5 +85,16 @@ open class MainActivity : AppCompatActivity() {
 
         customTabsIntent.intent.data = Uri.parse(url)
         customTabsIntent.launchUrl(this@MainActivity, Uri.parse(url))
+    }
+
+    private fun openOAuthTab() {
+        account?.beginOAuthFlow(REDIRECT_URL, scopes, false)!!.then(object: FxaResult.OnValueListener<String?, Void> {
+            override fun onValue(value: String?): FxaResult<Void>? {
+                if (value != null) {
+                    openTab(value)
+                }
+                return null
+            }
+        }, null)
     }
 }
