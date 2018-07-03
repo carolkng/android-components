@@ -42,7 +42,7 @@ class FirefoxAccount(override var rawPointer: FxaClient.RawFxAccount?) : RustObj
     }
 
     fun getProfile(): FxaResult<Profile> {
-        getProfile(false)
+        return getProfile(false)
     }
 
     fun newAssertion(audience: String): String? {
@@ -107,13 +107,13 @@ class FirefoxAccount(override var rawPointer: FxaClient.RawFxAccount?) : RustObj
             }
         }
 
-        fun fromJSONString(json: String): FirefoxAccount? {
+        fun fromJSONString(json: String): FirefoxAccount {
             val e = Error.ByReference()
             val raw = FxaClient.INSTANCE.fxa_from_json(json, e)
             if (e.isSuccess()) {
                 return FirefoxAccount(raw)
             } else {
-                return null
+                return FirefoxAccount(raw)
             }
         }
     }

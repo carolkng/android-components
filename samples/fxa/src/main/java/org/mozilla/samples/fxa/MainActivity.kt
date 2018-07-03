@@ -10,14 +10,13 @@ import android.support.v7.app.AppCompatActivity
 import android.support.customtabs.CustomTabsIntent
 import android.view.View
 import android.content.Intent
-import android.widget.NumberPicker
 import android.widget.TextView
 import mozilla.components.service.fxa.*
 
 open class MainActivity : AppCompatActivity() {
 
-    private var account: FirefoxAccount = null
-    private var config: Config? = null
+    private var account: FirefoxAccount? = null
+    private var scopes: Array<String> = arrayOf("profile")
 
     companion object {
         const val CLIENT_ID = "12cc4070a481bc73"
@@ -33,17 +32,27 @@ open class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        config = Config.custom(CONFIG_URL)
-        config?.let {
-            account = FirefoxAccount(it, CLIENT_ID)
-
-            val btn = findViewById<View>(R.id.button)
-            btn.setOnClickListener {
-                account?.beginOAuthFlow(REDIRECT_URL, arrayOf("profile"), false)?.let {
-                    openAuthTab(it)
+        Config.custom(CONFIG_URL).then(object: FxaResult.OnValueListener<Config, FirefoxAccount> {
+            override fun onValue(value: Config?): FxaResult<FirefoxAccount>? {
+                if (value != null) {
+                    return FxaResult.fromValue(FirefoxAccount(value, CLIENT_ID))
                 }
+                return null
             }
-        }
+        }, null).then(object: FxaResult.OnValueListener<FirefoxAccount, Void> {
+            override fun onValue(value: FirefoxAccount?): FxaResult<Void>? {
+                if (value != null) {
+                    account = value
+                    val btn = findViewById<View>(R.id.button)
+                    btn.setOnClickListener {
+                        account?.beginOAuthFlow(REDIRECT_URL, scopes, false)?.let {
+                            openAuthTab(it)
+                        }
+                    }
+                }
+                return null
+            }
+        }, null)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -53,24 +62,21 @@ open class MainActivity : AppCompatActivity() {
 
         if (Intent.ACTION_VIEW == action && data != null) {
             val txtView: TextView = findViewById(R.id.txtView)
-            val info = authenticate(data)
-            txtView.text = getString(R.string.signed_in, info)
+            val url = Uri.parse(data)
+            val code = url.getQueryParameter("code")
+            val state = url.getQueryParameter("state")
+
+            val completeOAuthFlow = account?.completeOAuthFlow(code, state)
+
+            account?.getProfile()!!.then(object: FxaResult.OnValueListener<Profile, Void> {
+                override fun onValue(value: Profile?): FxaResult<Void>? {
+                    if (value != null) {
+                        txtView.text = "${value.displayName ?: ""} ${value.email}"
+                    }
+                    return null
+                }
+            }, null)
         }
-    }
-
-    private fun authenticate(redirectUrl: String): String? {
-        val url = Uri.parse(redirectUrl)
-        val code = url.getQueryParameter("code")
-        val state = url.getQueryParameter("state")
-
-        val completeOAuthFlow = account.completeOAuthFlow(code, state)
-        val profile = account.getProfile().then(object: FxaResult.OnValueListener<Profile, Profile> {
-            override fun onValue(value: Profile): FxaResult<Profile> {
-                return FxaResult.fromValue(value)
-            }
-        })
-
-        return "${profile?.displayName ?: ""} ${profile?.email}"
     }
 
     private fun openAuthTab(url: String) {
