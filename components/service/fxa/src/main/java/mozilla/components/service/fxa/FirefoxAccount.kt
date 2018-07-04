@@ -18,7 +18,7 @@ class FirefoxAccount(override var rawPointer: FxaClient.RawFxAccount?) : RustObj
     }
 
     fun beginOAuthFlow(redirectURI: String, scopes: Array<String>, wantsKeys: Boolean): FxaResult<String?> {
-        val scope = scopes.joinToString( " ")
+        val scope = scopes.joinToString(" ")
         val e = Error.ByReference()
         val p = FxaClient.INSTANCE.fxa_begin_oauth_flow(this.validPointer(), redirectURI, scope, wantsKeys, e)
         if (e.isFailure()) {
@@ -100,4 +100,3 @@ class FirefoxAccount(override var rawPointer: FxaClient.RawFxAccount?) : RustObj
         }
     }
 }
-

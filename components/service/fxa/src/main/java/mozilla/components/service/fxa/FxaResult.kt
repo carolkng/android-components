@@ -79,14 +79,13 @@ class FxaResult<T>() {
      * [GeckoResult] is completed with an [Exception].
      */
     @Synchronized
-    fun <U> then(@Nullable valueListener: OnValueListener<T, U>?,
-                 @Nullable exceptionListener: OnExceptionListener<U>?): FxaResult<U> {
+    fun <U> then(@Nullable valueListener: OnValueListener<T, U>?, @Nullable exceptionListener: OnExceptionListener<U>?): FxaResult<U> {
         if (valueListener == null && exceptionListener == null) {
             throw IllegalArgumentException("At least one listener should be non-null")
         }
 
         val result = FxaResult<U>()
-        val listener = object: Listener<T> {
+        val listener = object : Listener<T> {
             override fun onValue(value: T?) {
                 if (valueListener == null) {
                     return

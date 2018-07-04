@@ -1,9 +1,9 @@
 package mozilla.components.service.fxa
 
 open class FxaException(message: String) : Exception(message) {
-    class Unspecified(msg: String) : FxaException(msg) {}
-    class Unauthorized(msg: String) : FxaException(msg) {}
-    class Panic(msg: String) : FxaException(msg) {}
+    class Unspecified(msg: String) : FxaException(msg)
+    class Unauthorized(msg: String) : FxaException(msg)
+    class Panic(msg: String) : FxaException(msg)
 
     companion object {
         fun fromConsuming(e: Error): FxaException? {
