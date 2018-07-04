@@ -1,6 +1,5 @@
 package mozilla.components.service.fxa
 
-import org.jetbrains.annotations.Nullable
 import java.util.ArrayList
 
 /**
@@ -19,7 +18,7 @@ class FxaResult<T>() {
     private interface Listener<T> {
         fun onValue(value: T?)
 
-        fun onException(exception: Exception?)
+        fun onException(exception: Exception)
     }
 
     /**
@@ -61,7 +60,7 @@ class FxaResult<T>() {
                 return null
             }
         }, object : OnExceptionListener<Void> {
-            override fun onException(exception: Exception?): FxaResult<Void>? {
+            override fun onException(exception: Exception): FxaResult<Void>? {
                 completeExceptionally(exception)
                 return null
             }
@@ -79,7 +78,7 @@ class FxaResult<T>() {
      * [GeckoResult] is completed with an [Exception].
      */
     @Synchronized
-    fun <U> then(@Nullable valueListener: OnValueListener<T, U>?, @Nullable exceptionListener: OnExceptionListener<U>?): FxaResult<U> {
+    fun <U> then(valueListener: OnValueListener<T, U>?, exceptionListener: OnExceptionListener<U>?): FxaResult<U> {
         if (valueListener == null && exceptionListener == null) {
             throw IllegalArgumentException("At least one listener should be non-null")
         }
@@ -94,7 +93,7 @@ class FxaResult<T>() {
                 result.completeFrom(valueListener.onValue(value))
             }
 
-            override fun onException(exception: Exception?) {
+            override fun onException(exception: Exception) {
                 if (exceptionListener == null) {
                     return
                 }
@@ -103,10 +102,9 @@ class FxaResult<T>() {
             }
         }
 
-        if (haveValue()) {
-            listener.onValue(mValue)
-        } else if (haveError()) {
-            listener.onException(mError)
+        if (mComplete) {
+            mError?.let { listener.onException(it) }
+            mValue?.let { listener.onValue(it) }
         } else {
             mListeners.add(listener)
         }
@@ -122,7 +120,7 @@ class FxaResult<T>() {
      * @throws IllegalStateException
      */
     @Synchronized
-    protected fun complete(value: T?) {
+    fun complete(value: T?) {
         if (mComplete) {
             throw IllegalStateException("result is already complete")
         }
@@ -141,19 +139,15 @@ class FxaResult<T>() {
      * @throws IllegalStateException
      */
     @Synchronized
-    protected fun completeExceptionally(exception: Exception?) {
+    fun completeExceptionally(exception: Exception) {
         if (mComplete) {
             throw IllegalStateException("result is already complete")
-        }
-
-        if (exception == null) {
-            throw IllegalArgumentException("Exception must not be null")
         }
 
         mError = exception
         mComplete = true
 
-        ArrayList(mListeners).forEach { it.onException(mError) }
+        ArrayList(mListeners).forEach { it.onException(exception) }
     }
 
     /**
@@ -180,20 +174,10 @@ class FxaResult<T>() {
      * @param <V> This is the type of the vale for the result returned from [.onException]
      */
     interface OnExceptionListener<V> {
-        fun onException(exception: Exception?): FxaResult<V>?
-    }
-
-    private fun haveValue(): Boolean {
-        return mComplete && mError == null
-    }
-
-    private fun haveError(): Boolean {
-        return mComplete && mError != null
+        fun onException(exception: Exception): FxaResult<V>?
     }
 
     companion object {
-        private val LOGTAG = "FxaResult"
-
         /**
          * This constructs a result that is fulfilled with the specified value.
          *

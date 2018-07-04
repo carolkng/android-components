@@ -11,7 +11,11 @@ import android.support.customtabs.CustomTabsIntent
 import android.view.View
 import android.content.Intent
 import android.widget.TextView
-import mozilla.components.service.fxa.*
+import mozilla.components.service.fxa.Config
+import mozilla.components.service.fxa.FirefoxAccount
+import mozilla.components.service.fxa.FxaClient
+import mozilla.components.service.fxa.FxaResult
+import mozilla.components.service.fxa.Profile
 
 open class MainActivity : AppCompatActivity() {
 
@@ -32,14 +36,14 @@ open class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        Config.custom(CONFIG_URL).then(object: FxaResult.OnValueListener<Config, FirefoxAccount> {
+        Config.custom(CONFIG_URL).then(object : FxaResult.OnValueListener<Config, FirefoxAccount> {
             override fun onValue(value: Config?): FxaResult<FirefoxAccount>? {
                 if (value != null) {
                     return FxaResult.fromValue(FirefoxAccount(value, CLIENT_ID))
                 }
                 return null
             }
-        }, null).then(object: FxaResult.OnValueListener<FirefoxAccount, Void> {
+        }, null).then(object : FxaResult.OnValueListener<FirefoxAccount, Void> {
             override fun onValue(value: FirefoxAccount?): FxaResult<Void>? {
                 if (value != null) {
                     account = value
@@ -66,7 +70,7 @@ open class MainActivity : AppCompatActivity() {
 
             account?.completeOAuthFlow(code, state)
 
-            account?.getProfile()!!.then(object: FxaResult.OnValueListener<Profile, Void> {
+            account?.getProfile()!!.then(object : FxaResult.OnValueListener<Profile, Void> {
                 override fun onValue(value: Profile?): FxaResult<Void>? {
                     if (value != null) {
                         txtView.text = "${value.displayName ?: ""} ${value.email}"
@@ -88,7 +92,7 @@ open class MainActivity : AppCompatActivity() {
     }
 
     private fun openOAuthTab() {
-        account?.beginOAuthFlow(REDIRECT_URL, scopes, false)!!.then(object: FxaResult.OnValueListener<String?, Void> {
+        account?.beginOAuthFlow(REDIRECT_URL, scopes, false)!!.then(object : FxaResult.OnValueListener<String?, Void> {
             override fun onValue(value: String?): FxaResult<Void>? {
                 if (value != null) {
                     openTab(value)
