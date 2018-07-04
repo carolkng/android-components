@@ -17,25 +17,33 @@ class FirefoxAccount(override var rawPointer: FxaClient.RawFxAccount?) : RustObj
         FxaClient.INSTANCE.fxa_free(p)
     }
 
-    fun beginOAuthFlow(redirectURI: String, scopes: Array<String>, wantsKeys: Boolean): FxaResult<String?> {
-        val scope = scopes.joinToString(" ")
-        val e = Error.ByReference()
-        val p = FxaClient.INSTANCE.fxa_begin_oauth_flow(this.validPointer(), redirectURI, scope, wantsKeys, e)
-        if (e.isFailure()) {
-            return FxaResult.fromException(FxaException.fromConsuming(e)!!)
-        } else {
-            return FxaResult.fromValue(getAndConsumeString(p))
+    fun beginOAuthFlow(redirectURI: String, scopes: Array<String>, wantsKeys: Boolean): FxaResult<String> {
+        val result = FxaResult<String>()
+        launch {
+            val scope = scopes.joinToString(" ")
+            val e = Error.ByReference()
+            val p = FxaClient.INSTANCE.fxa_begin_oauth_flow(this.validPointer(), redirectURI, scope, wantsKeys, e)
+            if (e.isFailure()) {
+                result.completeExceptionally(FxaException.fromConsuming(e)!!)
+            } else {
+                result.complete(getAndConsumeString(p))
+            }
         }
+        return result
     }
 
     fun getProfile(ignoreCache: Boolean): FxaResult<Profile> {
-        val e = Error.ByReference()
-        val p = FxaClient.INSTANCE.fxa_profile(this.validPointer(), ignoreCache, e)
-        if (e.isFailure()) {
-            return FxaResult.fromException(FxaException.fromConsuming(e)!!)
-        } else {
-            return FxaResult.fromValue(Profile(p))
+        val result = FxaResult<Profile>()
+        launch {
+            val e = Error.ByReference()
+            val p = FxaClient.INSTANCE.fxa_profile(this.validPointer(), ignoreCache, e)
+            if (e.isFailure()) {
+                result.completeExceptionally(FxaException.fromConsuming(e)!!)
+            } else {
+                result.complete(Profile(p))
+            }
         }
+        return result
     }
 
     fun getProfile(): FxaResult<Profile> {
@@ -80,23 +88,31 @@ class FirefoxAccount(override var rawPointer: FxaClient.RawFxAccount?) : RustObj
 
     companion object {
         fun from(config: Config, clientId: String, webChannelResponse: String): FxaResult<FirefoxAccount> {
-            val e = Error.ByReference()
-            val raw = FxaClient.INSTANCE.fxa_from_credentials(config.consumePointer(), clientId, webChannelResponse, e)
-            if (e.isFailure()) {
-                return FxaResult.fromException(FxaException.fromConsuming(e)!!)
-            } else {
-                return FxaResult.fromValue(FirefoxAccount(raw))
+            val result = FxaResult<FirefoxAccount>()
+            launch {
+                val e = Error.ByReference()
+                val raw = FxaClient.INSTANCE.fxa_from_credentials(config.consumePointer(), clientId, webChannelResponse, e)
+                if (e.isFailure()) {
+                    result.completeExceptionally(FxaException.fromConsuming(e)!!)
+                } else {
+                    result.complete(FirefoxAccount(raw))
+                }
             }
+            return result
         }
 
         fun fromJSONString(json: String): FxaResult<FirefoxAccount> {
-            val e = Error.ByReference()
-            val raw = FxaClient.INSTANCE.fxa_from_json(json, e)
-            if (e.isFailure()) {
-                return FxaResult.fromException(FxaException.fromConsuming(e)!!)
-            } else {
-                return FxaResult.fromValue(FirefoxAccount(raw))
+            val result = FxaResult<FirefoxAccount>()
+            launch {
+                val e = Error.ByReference()
+                val raw = FxaClient.INSTANCE.fxa_from_json(json, e)
+                if (e.isFailure()) {
+                    result.completeExceptionally(FxaException.fromConsuming(e)!!)
+                } else {
+                    result.complete(FirefoxAccount(raw))
+                }
             }
+            return result
         }
     }
 }

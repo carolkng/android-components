@@ -20,7 +20,7 @@ class FxaResultTest {
 
     @Test
     fun thenWithException() {
-        FxaResult.fromException<String>(Exception("42")).then(null, object: FxaResult.OnExceptionListener<Void> {
+        FxaResult.fromException<String>(Exception("42")).then(null, object : FxaResult.OnExceptionListener<Void> {
             override fun onException(exception: Exception): FxaResult<Void>? {
                 assertEquals(exception.message, "42")
                 return null
@@ -35,18 +35,18 @@ class FxaResultTest {
 
     @Test
     fun resultChaining() {
-        FxaResult.fromValue(42).then(object: FxaResult.OnValueListener<Int, String> {
+        FxaResult.fromValue(42).then(object : FxaResult.OnValueListener<Int, String> {
             override fun onValue(value: Int?): FxaResult<String>? {
                 assertEquals(value, 42)
                 return FxaResult.fromValue("string")
             }
-        }, null).then(object: FxaResult.OnValueListener<String, Int> {
+        }, null).then(object : FxaResult.OnValueListener<String, Int> {
             override fun onValue(value: String?): FxaResult<Int>? {
                 assertEquals(value, "string")
                 throw Exception("exception message")
                 return FxaResult.fromValue(42)
             }
-        }, null).then(null, object: FxaResult.OnExceptionListener<String> {
+        }, null).then(null, object : FxaResult.OnExceptionListener<String> {
             override fun onException(exception: Exception): FxaResult<String>? {
                 assertEquals(exception.message, "exception message")
                 return null

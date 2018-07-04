@@ -32,17 +32,6 @@ class FxaResult<T>() {
         mError = from.mError
     }
 
-    override fun equals(other: Any?): Boolean {
-        if (other is FxaResult<*>) {
-            val result = other as FxaResult<*>?
-            return result!!.mComplete == mComplete &&
-                    result.mError === mError &&
-                    result.mValue === mValue
-        }
-
-        return false
-    }
-
     /**
      * Completes this result based on another result.
      *
@@ -78,6 +67,7 @@ class FxaResult<T>() {
      * [GeckoResult] is completed with an [Exception].
      */
     @Synchronized
+    @Suppress("ComplexMethod")
     fun <U> then(valueListener: OnValueListener<T, U>?, exceptionListener: OnExceptionListener<U>?): FxaResult<U> {
         if (valueListener == null && exceptionListener == null) {
             throw IllegalArgumentException("At least one listener should be non-null")
