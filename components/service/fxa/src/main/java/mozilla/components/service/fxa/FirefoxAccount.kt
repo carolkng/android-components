@@ -9,11 +9,8 @@ class FirefoxAccount(override var rawPointer: FxaClient.RawFxAccount?) : RustObj
     constructor(config: Config, clientId: String): this(null) {
         val e = Error.ByReference()
         val result = FxaClient.INSTANCE.fxa_new(config.consumePointer(), clientId, e)
-        if (e.isSuccess()) {
-            this.rawPointer = result
-        } else {
-            this.rawPointer = null
-        }
+        if (e.isFailure()) throw FxaException.fromConsuming(e)!!
+        this.rawPointer = result
     }
 
     override fun destroyPointer(p: FxaClient.RawFxAccount) {
@@ -24,20 +21,20 @@ class FirefoxAccount(override var rawPointer: FxaClient.RawFxAccount?) : RustObj
         val scope = scopes.joinToString(" ")
         val e = Error.ByReference()
         val p = FxaClient.INSTANCE.fxa_begin_oauth_flow(this.validPointer(), redirectURI, scope, wantsKeys, e)
-        if (e.isSuccess()) {
-            return FxaResult.fromValue(getAndConsumeString(p))
-        } else {
+        if (e.isFailure()) {
             return FxaResult.fromException(FxaException.fromConsuming(e)!!)
+        } else {
+            return FxaResult.fromValue(getAndConsumeString(p))
         }
     }
 
     fun getProfile(ignoreCache: Boolean): FxaResult<Profile> {
         val e = Error.ByReference()
         val p = FxaClient.INSTANCE.fxa_profile(this.validPointer(), ignoreCache, e)
-        if (e.isSuccess()) {
-            return FxaResult.fromValue(Profile(p))
-        } else {
+        if (e.isFailure()) {
             return FxaResult.fromException(FxaException.fromConsuming(e)!!)
+        } else {
+            return FxaResult.fromValue(Profile(p))
         }
     }
 
@@ -48,72 +45,57 @@ class FirefoxAccount(override var rawPointer: FxaClient.RawFxAccount?) : RustObj
     fun newAssertion(audience: String): String? {
         val e = Error.ByReference()
         val p = FxaClient.INSTANCE.fxa_assertion_new(this.validPointer(), audience, e)
-        if (e.isSuccess()) {
-            return getAndConsumeString(p)
-        } else {
-            return null
-        }
+        if (e.isFailure()) throw FxaException.fromConsuming(e)!!
+        return getAndConsumeString(p)
     }
 
     fun getTokenServerEndpointURL(): String? {
         val e = Error.ByReference()
         val p = FxaClient.INSTANCE.fxa_get_token_server_endpoint_url(this.validPointer(), e)
-        if (e.isSuccess()) {
-            return getAndConsumeString(p)
-        } else {
-            return null
-        }
+        if (e.isFailure()) throw FxaException.fromConsuming(e)!!
+        return getAndConsumeString(p)
     }
 
-    fun getSyncKeys(): SyncKeys? {
+    fun getSyncKeys(): SyncKeys {
         val e = Error.ByReference()
         val p = FxaClient.INSTANCE.fxa_get_sync_keys(this.validPointer(), e)
-        if (e.isSuccess()) {
-            return SyncKeys(p)
-        } else {
-            return null
-        }
+        if (e.isFailure()) throw FxaException.fromConsuming(e)!!
+        return SyncKeys(p)
     }
 
-    fun completeOAuthFlow(code: String, state: String): OAuthInfo? {
+    fun completeOAuthFlow(code: String, state: String): OAuthInfo {
         val e = Error.ByReference()
         val p = FxaClient.INSTANCE.fxa_complete_oauth_flow(this.validPointer(), code, state, e)
-        if (e.isSuccess()) {
-            return OAuthInfo(p)
-        } else {
-            return null
-        }
+        if (e.isFailure()) throw FxaException.fromConsuming(e)!!
+        return OAuthInfo(p)
     }
 
-    fun getOAuthToken(scopes: Array<String>): OAuthInfo? {
+    fun getOAuthToken(scopes: Array<String>): OAuthInfo {
         val scope = scopes.joinToString(" ")
         val e = Error.ByReference()
         val p = FxaClient.INSTANCE.fxa_get_oauth_token(this.validPointer(), scope, e)
-        if (e.isSuccess()) {
-            return OAuthInfo(p)
-        } else {
-            return null
-        }
+        if (e.isFailure()) throw FxaException.fromConsuming(e)!!
+        return OAuthInfo(p)
     }
 
     companion object {
         fun from(config: Config, clientId: String, webChannelResponse: String): FxaResult<FirefoxAccount> {
             val e = Error.ByReference()
             val raw = FxaClient.INSTANCE.fxa_from_credentials(config.consumePointer(), clientId, webChannelResponse, e)
-            if (e.isSuccess()) {
-                return FxaResult.fromValue(FirefoxAccount(raw))
-            } else {
+            if (e.isFailure()) {
                 return FxaResult.fromException(FxaException.fromConsuming(e)!!)
+            } else {
+                return FxaResult.fromValue(FirefoxAccount(raw))
             }
         }
 
         fun fromJSONString(json: String): FxaResult<FirefoxAccount> {
             val e = Error.ByReference()
             val raw = FxaClient.INSTANCE.fxa_from_json(json, e)
-            if (e.isSuccess()) {
-                return FxaResult.fromValue(FirefoxAccount(raw))
-            } else {
+            if (e.isFailure()) {
                 return FxaResult.fromException(FxaException.fromConsuming(e)!!)
+            } else {
+                return FxaResult.fromValue(FirefoxAccount(raw))
             }
         }
     }

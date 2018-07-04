@@ -14,20 +14,20 @@ class Config(override var rawPointer: FxaClient.RawConfig?) : RustObject<FxaClie
         fun release(): FxaResult<Config> {
             val e = Error.ByReference()
             val cfg = FxaClient.INSTANCE.fxa_get_release_config(e)
-            if (e.isSuccess()) {
-                return FxaResult.fromValue(Config(cfg))
-            } else {
+            if (e.isFailure()) {
                 return FxaResult.fromException(FxaException.fromConsuming(e)!!)
+            } else {
+                return FxaResult.fromValue(Config(cfg))
             }
         }
 
         fun custom(content_base: String): FxaResult<Config> {
             val e = Error.ByReference()
             val cfg = FxaClient.INSTANCE.fxa_get_custom_config(content_base, e)
-            if (e.isSuccess()) {
-                return FxaResult.fromValue(Config(cfg))
-            } else {
+            if (e.isFailure()) {
                 return FxaResult.fromException(FxaException.fromConsuming(e)!!)
+            } else {
+                return FxaResult.fromValue(Config(cfg))
             }
         }
     }
