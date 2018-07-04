@@ -4,6 +4,8 @@
 
 package mozilla.components.service.fxa
 
+import kotlinx.coroutines.experimental.launch
+
 class FirefoxAccount(override var rawPointer: FxaClient.RawFxAccount?) : RustObject<FxaClient.RawFxAccount>() {
 
     constructor(config: Config, clientId: String): this(null) {
@@ -19,10 +21,11 @@ class FirefoxAccount(override var rawPointer: FxaClient.RawFxAccount?) : RustObj
 
     fun beginOAuthFlow(redirectURI: String, scopes: Array<String>, wantsKeys: Boolean): FxaResult<String> {
         val result = FxaResult<String>()
+        val accountPointer = this.validPointer()
         launch {
             val scope = scopes.joinToString(" ")
             val e = Error.ByReference()
-            val p = FxaClient.INSTANCE.fxa_begin_oauth_flow(this.validPointer(), redirectURI, scope, wantsKeys, e)
+            val p = FxaClient.INSTANCE.fxa_begin_oauth_flow(accountPointer, redirectURI, scope, wantsKeys, e)
             if (e.isFailure()) {
                 result.completeExceptionally(FxaException.fromConsuming(e)!!)
             } else {
@@ -34,9 +37,10 @@ class FirefoxAccount(override var rawPointer: FxaClient.RawFxAccount?) : RustObj
 
     fun getProfile(ignoreCache: Boolean): FxaResult<Profile> {
         val result = FxaResult<Profile>()
+        val accountPointer = this.validPointer()
         launch {
             val e = Error.ByReference()
-            val p = FxaClient.INSTANCE.fxa_profile(this.validPointer(), ignoreCache, e)
+            val p = FxaClient.INSTANCE.fxa_profile(accountPointer, ignoreCache, e)
             if (e.isFailure()) {
                 result.completeExceptionally(FxaException.fromConsuming(e)!!)
             } else {
