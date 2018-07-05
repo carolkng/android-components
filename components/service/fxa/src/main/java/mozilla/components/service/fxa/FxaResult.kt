@@ -57,14 +57,14 @@ class FxaResult<T>() {
     }
 
     /**
-     * Adds listeners to be called when the [GeckoResult] is completed either with
+     * Adds listeners to be called when the [FxaResult] is completed either with
      * a value or [Exception]. Listeners will be invoked on the same thread in which the
-     * [GeckoResult] was completed.
+     * [FxaResult] was completed.
      *
      * @param valueListener An instance of [OnValueListener], called when the
-     * [GeckoResult] is completed with a value.
+     * [FxaResult] is completed with a value.
      * @param exceptionListener An instance of [OnExceptionListener], called when the
-     * [GeckoResult] is completed with an [Exception].
+     * [FxaResult] is completed with an [Exception].
      */
     @Synchronized
     @Suppress("ComplexMethod")
@@ -146,6 +146,7 @@ class FxaResult<T>() {
      * @param <T> This is the type of the value delivered via [.onValue]
      * @param <U> This is the type of the value for the result returned from [.onValue]
      */
+    @FunctionalInterface
     interface OnValueListener<T, U> {
         /**
          * Called when a [FxaResult] is completed with a value. This will be
@@ -163,6 +164,7 @@ class FxaResult<T>() {
      *
      * @param <V> This is the type of the vale for the result returned from [.onException]
      */
+    @FunctionalInterface
     interface OnExceptionListener<V> {
         fun onException(exception: Exception): FxaResult<V>?
     }

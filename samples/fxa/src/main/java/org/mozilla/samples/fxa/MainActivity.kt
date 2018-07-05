@@ -15,6 +15,7 @@ import mozilla.components.service.fxa.Config
 import mozilla.components.service.fxa.FirefoxAccount
 import mozilla.components.service.fxa.FxaClient
 import mozilla.components.service.fxa.FxaResult
+import mozilla.components.service.fxa.FxaResult.OnValueListener
 import mozilla.components.service.fxa.Profile
 
 open class MainActivity : AppCompatActivity() {
@@ -36,25 +37,22 @@ open class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        Config.custom(CONFIG_URL).then(object : FxaResult.OnValueListener<Config, FirefoxAccount> {
-            override fun onValue(value: Config?): FxaResult<FirefoxAccount>? {
-                if (value != null) {
-                    return FxaResult.fromValue(FirefoxAccount(value, CLIENT_ID))
+        val configListener = { value: Config? ->
+            value?.let { FxaResult.fromValue(FirefoxAccount(it, CLIENT_ID)) }
+        } as OnValueListener<Config, FirefoxAccount>
+
+        val accountListener = { value: FirefoxAccount? ->
+            value?.let {
+                account = it
+                val btn = findViewById<View>(R.id.button)
+                btn.setOnClickListener {
+                    openOAuthTab()
                 }
-                return null
             }
-        }, null).then(object : FxaResult.OnValueListener<FirefoxAccount, Void> {
-            override fun onValue(value: FirefoxAccount?): FxaResult<Void>? {
-                if (value != null) {
-                    account = value
-                    val btn = findViewById<View>(R.id.button)
-                    btn.setOnClickListener {
-                        openOAuthTab()
-                    }
-                }
-                return null
-            }
-        }, null)
+        } as OnValueListener<FirefoxAccount, Void>
+
+        Config.custom(CONFIG_URL).then(configListener, null)
+                .then(accountListener, null)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -70,16 +68,12 @@ open class MainActivity : AppCompatActivity() {
 
             account?.completeOAuthFlow(code, state)
 
-            account?.getProfile()!!.then(object : FxaResult.OnValueListener<Profile, Void> {
-                override fun onValue(value: Profile?): FxaResult<Void>? {
-                    if (value != null) {
-                        runOnUiThread( Runnable() {
-                            txtView.text = "${value.displayName ?: ""} ${value.email}"
-                        })
-                    }
-                    return null
-                }
-            }, null)
+            val valueListener = { value: Profile? ->
+                value?.let { runOnUiThread { txtView.text = getString(R.string.signed_in, "${it.displayName ?: ""} ${it.email}" }})
+                null
+            } as OnValueListener<Profile, Void>
+
+            account?.getProfile()?.then(valueListener, null)
         }
     }
 
@@ -94,13 +88,11 @@ open class MainActivity : AppCompatActivity() {
     }
 
     private fun openOAuthTab() {
-        account?.beginOAuthFlow(REDIRECT_URL, scopes, false)!!.then(object : FxaResult.OnValueListener<String, Void> {
-            override fun onValue(value: String?): FxaResult<Void>? {
-                if (value != null) {
-                    openTab(value)
-                }
-                return null
-            }
-        }, null)
+        val valueListener =  { value: String?  ->
+            value?.let { openTab(it) }
+            null
+        } as OnValueListener<String, Void>
+
+        account?.beginOAuthFlow(REDIRECT_URL, scopes, false)?.then(valueListener, null)
     }
 }
