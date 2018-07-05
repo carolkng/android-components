@@ -57,6 +57,39 @@ class FxaResult<T>() {
     }
 
     /**
+     * Convenience method allowing [FxaResult] to be called with a lambda expression on a value.
+     *
+     * @param fn A lambda expression with the same method signature as [OnValueListener],
+     * called when the [FxaResult] is completed with a value.
+     */
+    fun <U> then(fn: (value: T?) -> FxaResult<U>?): FxaResult<U> {
+        val listener = object : OnValueListener<T, U> {
+            override fun onValue(value: T?): FxaResult<U>? = fn(value)
+        }
+        return then(listener, null)
+    }
+
+    /**
+     * Convenience method allowing [FxaResult] to be called with lambda expressions on a value
+     * and on an exception.
+     *
+     * @param vfn A lambda expression with the same method signature as [OnValueListener],
+     * called when the [FxaResult] is completed with a value.
+     * @param efn A lambda expression with the same method signature as [OnExceptionListener],
+     * called when the [FxaResult] is completed with an exception.
+     */
+    fun <U> then(vfn: (value: T?) -> FxaResult<U>?, efn: (exception: Exception) -> FxaResult<U>): FxaResult<U> {
+        val valueListener = object : OnValueListener<T, U> {
+            override fun onValue(value: T?): FxaResult<U>? = vfn(value)
+        }
+
+        val exceptionListener = object : OnExceptionListener<U> {
+            override fun onException(exception: Exception): FxaResult<U>? = efn(exception)
+        }
+        return then(valueListener, exceptionListener)
+    }
+
+    /**
      * Adds listeners to be called when the [FxaResult] is completed either with
      * a value or [Exception]. Listeners will be invoked on the same thread in which the
      * [FxaResult] was completed.

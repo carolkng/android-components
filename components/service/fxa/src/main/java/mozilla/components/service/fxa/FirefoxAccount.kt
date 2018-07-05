@@ -75,19 +75,35 @@ class FirefoxAccount(override var rawPointer: FxaClient.RawFxAccount?) : RustObj
         return SyncKeys(p)
     }
 
-    fun completeOAuthFlow(code: String, state: String): OAuthInfo {
-        val e = Error.ByReference()
-        val p = FxaClient.INSTANCE.fxa_complete_oauth_flow(this.validPointer(), code, state, e)
-        if (e.isFailure()) throw FxaException.fromConsuming(e)!!
-        return OAuthInfo(p)
+    fun completeOAuthFlow(code: String, state: String): FxaResult<OAuthInfo> {
+        val result = FxaResult<OAuthInfo>()
+        val accountPointer = this.validPointer()
+        launch {
+            val e = Error.ByReference()
+            val p = FxaClient.INSTANCE.fxa_complete_oauth_flow(accountPointer, code, state, e)
+            if (e.isFailure()) {
+                result.completeExceptionally(FxaException.fromConsuming(e)!!)
+            } else {
+                result.complete(OAuthInfo(p))
+            }
+        }
+        return result
     }
 
-    fun getOAuthToken(scopes: Array<String>): OAuthInfo {
-        val scope = scopes.joinToString(" ")
-        val e = Error.ByReference()
-        val p = FxaClient.INSTANCE.fxa_get_oauth_token(this.validPointer(), scope, e)
-        if (e.isFailure()) throw FxaException.fromConsuming(e)!!
-        return OAuthInfo(p)
+    fun getOAuthToken(scopes: Array<String>): FxaResult<OAuthInfo> {
+        val result = FxaResult<OAuthInfo>()
+        val accountPointer = this.validPointer()
+        launch {
+            val scope = scopes.joinToString(" ")
+            val e = Error.ByReference()
+            val p = FxaClient.INSTANCE.fxa_get_oauth_token(accountPointer, scope, e)
+            if (e.isFailure()) {
+                result.completeExceptionally(FxaException.fromConsuming(e)!!)
+            } else {
+                result.complete(OAuthInfo(p))
+            }
+        }
+        return result
     }
 
     companion object {

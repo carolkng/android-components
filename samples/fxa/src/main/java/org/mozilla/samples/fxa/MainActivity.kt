@@ -11,12 +11,7 @@ import android.support.customtabs.CustomTabsIntent
 import android.view.View
 import android.content.Intent
 import android.widget.TextView
-import mozilla.components.service.fxa.Config
-import mozilla.components.service.fxa.FirefoxAccount
-import mozilla.components.service.fxa.FxaClient
-import mozilla.components.service.fxa.FxaResult
-import mozilla.components.service.fxa.FxaResult.OnValueListener
-import mozilla.components.service.fxa.Profile
+import mozilla.components.service.fxa.*
 
 open class MainActivity : AppCompatActivity() {
 
@@ -37,22 +32,16 @@ open class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val configListener = { value: Config? ->
-            value?.let { FxaResult.fromValue(FirefoxAccount(it, CLIENT_ID)) }
-        } as OnValueListener<Config, FirefoxAccount>
+        findViewById<View>(R.id.button).setOnClickListener {
+            openOAuthTab()
+        }
 
-        val accountListener = { value: FirefoxAccount? ->
+        Config.custom(CONFIG_URL).then { value: Config? ->
             value?.let {
-                account = it
-                val btn = findViewById<View>(R.id.button)
-                btn.setOnClickListener {
-                    openOAuthTab()
-                }
+                account = FirefoxAccount(it, CLIENT_ID)
+                FxaResult.fromValue(account)
             }
-        } as OnValueListener<FirefoxAccount, Void>
-
-        Config.custom(CONFIG_URL).then(configListener, null)
-                .then(accountListener, null)
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -66,14 +55,14 @@ open class MainActivity : AppCompatActivity() {
             val code = url.getQueryParameter("code")
             val state = url.getQueryParameter("state")
 
-            account?.completeOAuthFlow(code, state)
-
-            val valueListener = { value: Profile? ->
-                value?.let { runOnUiThread { txtView.text = getString(R.string.signed_in, "${it.displayName ?: ""} ${it.email}" }})
-                null
-            } as OnValueListener<Profile, Void>
-
-            account?.getProfile()?.then(valueListener, null)
+            val handleAuth = { value: OAuthInfo? -> account?.getProfile() }
+            val handleProfile = { value: Profile? ->
+                value?.let { runOnUiThread {
+                    txtView.text = getString(R.string.signed_in, "${it.displayName ?: ""} ${it.email}")
+                }}
+                FxaResult<Void>()
+            }
+            account?.completeOAuthFlow(code, state)?.then(handleAuth)?.then(handleProfile)
         }
     }
 
@@ -88,11 +77,11 @@ open class MainActivity : AppCompatActivity() {
     }
 
     private fun openOAuthTab() {
-        val valueListener =  { value: String?  ->
+        val valueListener =  { value: String? ->
             value?.let { openTab(it) }
-            null
-        } as OnValueListener<String, Void>
+            FxaResult<Void>()
+        }
 
-        account?.beginOAuthFlow(REDIRECT_URL, scopes, false)?.then(valueListener, null)
+        account?.beginOAuthFlow(REDIRECT_URL, scopes, false)?.then(valueListener)
     }
 }
