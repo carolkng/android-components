@@ -95,7 +95,8 @@ class FirefoxAccount(override var rawPointer: FxaClient.RawFxAccount?) : RustObj
             val result = FxaResult<FirefoxAccount>()
             launch {
                 val e = Error.ByReference()
-                val raw = FxaClient.INSTANCE.fxa_from_credentials(config.consumePointer(), clientId, webChannelResponse, e)
+                val raw = FxaClient.INSTANCE.fxa_from_credentials(config.consumePointer(),
+                        clientId, webChannelResponse, e)
                 if (e.isFailure()) {
                     result.completeExceptionally(FxaException.fromConsuming(e)!!)
                 } else {
