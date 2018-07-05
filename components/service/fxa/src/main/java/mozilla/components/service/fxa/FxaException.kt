@@ -6,11 +6,9 @@ open class FxaException(message: String) : Exception(message) {
     class Panic(msg: String) : FxaException(msg)
 
     companion object {
-        fun fromConsuming(e: Error): FxaException? {
+        fun fromConsuming(e: Error): FxaException {
             val message = e.consumeMessage() ?: ""
             return when (e.code) {
-                FxaClient.ErrorCode.NoError.ordinal -> null
-                FxaClient.ErrorCode.Other.ordinal -> Unspecified(message)
                 FxaClient.ErrorCode.AuthenticationError.ordinal -> Unauthorized(message)
                 FxaClient.ErrorCode.InternalPanic.ordinal -> Panic(message)
                 else -> Unspecified(message)

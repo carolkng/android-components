@@ -15,7 +15,7 @@ class Config(override var rawPointer: FxaClient.RawConfig?) : RustObject<FxaClie
             val e = Error.ByReference()
             val cfg = FxaClient.INSTANCE.fxa_get_release_config(e)
             if (e.isFailure()) {
-                return FxaResult.fromException(FxaException.fromConsuming(e)!!)
+                return FxaResult.fromException(FxaException.fromConsuming(e))
             } else {
                 return FxaResult.fromValue(Config(cfg))
             }
@@ -25,7 +25,7 @@ class Config(override var rawPointer: FxaClient.RawConfig?) : RustObject<FxaClie
             val e = Error.ByReference()
             val cfg = FxaClient.INSTANCE.fxa_get_custom_config(content_base, e)
             if (e.isFailure()) {
-                return FxaResult.fromException(FxaException.fromConsuming(e)!!)
+                return FxaResult.fromException(FxaException.fromConsuming(e))
             } else {
                 return FxaResult.fromValue(Config(cfg))
             }
