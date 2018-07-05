@@ -10,22 +10,18 @@ class FxaResultTest {
 
     @Test
     fun thenWithResult() {
-        FxaResult.fromValue(42).then(object : FxaResult.OnValueListener<Int, Void> {
-            override fun onValue(value: Int?): FxaResult<Void>? {
-                assertEquals(value, 42)
-                return null
-            }
-        }, null)
+        FxaResult.fromValue(42).then { value: Int? ->
+            assertEquals(value, 42)
+            FxaResult<Void>()
+        }
     }
 
     @Test
     fun thenWithException() {
-        FxaResult.fromException<String>(Exception("42")).then(null, object : FxaResult.OnExceptionListener<Void> {
-            override fun onException(exception: Exception): FxaResult<Void>? {
-                assertEquals(exception.message, "42")
-                return null
-            }
-        })
+        FxaResult.fromException<Void>(Exception("exception message")).then { value: Exception ->
+            assertEquals(exception.message, "exception message")
+            FxaResult<Void>()
+        }
     }
 
     @Test(expected = IllegalArgumentException::class)
@@ -35,22 +31,15 @@ class FxaResultTest {
 
     @Test
     fun resultChaining() {
-        FxaResult.fromValue(42).then(object : FxaResult.OnValueListener<Int, String> {
-            override fun onValue(value: Int?): FxaResult<String>? {
-                assertEquals(value, 42)
-                return FxaResult.fromValue("string")
-            }
-        }, null).then(object : FxaResult.OnValueListener<String, Int> {
-            override fun onValue(value: String?): FxaResult<Int>? {
-                assertEquals(value, "string")
-                throw Exception("exception message")
-                return FxaResult.fromValue(42)
-            }
-        }, null).then(null, object : FxaResult.OnExceptionListener<String> {
-            override fun onException(exception: Exception): FxaResult<String>? {
-                assertEquals(exception.message, "exception message")
-                return null
-            }
-        })
+        FxaResult.fromValue(42).then { value: Int? ->
+            assertEquals(value, 42)
+            FxaResult.fromValue("string")
+        }.then { value: String? ->
+            assertEquals(value, "String")
+            throw Exception("exception message")
+            FxaResult.fromValue(42)
+        }.then { value: Exception ->
+            assertEquals(exception.message, "exception message")
+        }
     }
 }
