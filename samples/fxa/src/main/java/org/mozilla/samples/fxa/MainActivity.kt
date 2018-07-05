@@ -73,7 +73,9 @@ open class MainActivity : AppCompatActivity() {
             account?.getProfile()!!.then(object : FxaResult.OnValueListener<Profile, Void> {
                 override fun onValue(value: Profile?): FxaResult<Void>? {
                     if (value != null) {
-                        txtView.text = "${value.displayName ?: ""} ${value.email}"
+                        runOnUiThread( Runnable() {
+                            txtView.text = "${value.displayName ?: ""} ${value.email}"
+                        })
                     }
                     return null
                 }
@@ -92,7 +94,7 @@ open class MainActivity : AppCompatActivity() {
     }
 
     private fun openOAuthTab() {
-        account?.beginOAuthFlow(REDIRECT_URL, scopes, false)!!.then(object : FxaResult.OnValueListener<String?, Void> {
+        account?.beginOAuthFlow(REDIRECT_URL, scopes, false)!!.then(object : FxaResult.OnValueListener<String, Void> {
             override fun onValue(value: String?): FxaResult<Void>? {
                 if (value != null) {
                     openTab(value)
