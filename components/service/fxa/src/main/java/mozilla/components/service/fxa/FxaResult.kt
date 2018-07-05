@@ -7,7 +7,7 @@ import java.util.ArrayList
  *
  * @param <T> The type of the value delivered via the FxaResult.
  */
-class FxaResult<T>() {
+class FxaResult<T> {
 
     private var mComplete: Boolean = false
     private var mValue: T? = null
@@ -19,17 +19,6 @@ class FxaResult<T>() {
         fun onValue(value: T?)
 
         fun onException(exception: Exception)
-    }
-
-    /**
-     * This constructs a result from another result. All state except listeners is copied.
-     *
-     * @param from The [FxaResult] to copy.
-     */
-    constructor(from: FxaResult<T>) : this() {
-        mComplete = from.mComplete
-        mValue = from.mValue
-        mError = from.mError
     }
 
     /**
@@ -78,7 +67,7 @@ class FxaResult<T>() {
      * @param efn A lambda expression with the same method signature as [OnExceptionListener],
      * called when the [FxaResult] is completed with an exception.
      */
-    fun <U> then(vfn: (value: T?) -> FxaResult<U>?, efn: (exception: Exception) -> FxaResult<U>): FxaResult<U> {
+    fun <U> then(vfn: (value: T?) -> FxaResult<U>?, efn: (exception: Exception) -> FxaResult<U>?): FxaResult<U> {
         val valueListener = object : OnValueListener<T, U> {
             override fun onValue(value: T?): FxaResult<U>? = vfn(value)
         }
@@ -101,18 +90,10 @@ class FxaResult<T>() {
      */
     @Synchronized
     @Suppress("ComplexMethod")
-    fun <U> then(valueListener: OnValueListener<T, U>?, exceptionListener: OnExceptionListener<U>?): FxaResult<U> {
-        if (valueListener == null && exceptionListener == null) {
-            throw IllegalArgumentException("At least one listener should be non-null")
-        }
-
+    fun <U> then(valueListener: OnValueListener<T, U>, exceptionListener: OnExceptionListener<U>?): FxaResult<U> {
         val result = FxaResult<U>()
         val listener = object : Listener<T> {
             override fun onValue(value: T?) {
-                if (valueListener == null) {
-                    return
-                }
-
                 result.completeFrom(valueListener.onValue(value))
             }
 

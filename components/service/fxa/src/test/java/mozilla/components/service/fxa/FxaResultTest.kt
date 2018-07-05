@@ -1,6 +1,8 @@
 package mozilla.components.service.fxa
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -18,15 +20,13 @@ class FxaResultTest {
 
     @Test
     fun thenWithException() {
-        FxaResult.fromException<Void>(Exception("exception message")).then { value: Exception ->
-            assertEquals(exception.message, "exception message")
+        FxaResult.fromException<Void>(Exception("exception message")).then({ value: Void? ->
+            assertNull("valueListener should not be called", value)
             FxaResult<Void>()
-        }
-    }
-
-    @Test(expected = IllegalArgumentException::class)
-    fun thenNoListeners() {
-        FxaResult.fromValue(42).then(null as FxaResult.OnValueListener<Int, Void>, null)
+        }, { value: Exception ->
+            assertEquals(value.message, "exception message")
+            FxaResult()
+        })
     }
 
     @Test
@@ -35,11 +35,14 @@ class FxaResultTest {
             assertEquals(value, 42)
             FxaResult.fromValue("string")
         }.then { value: String? ->
-            assertEquals(value, "String")
-            throw Exception("exception message")
-            FxaResult.fromValue(42)
-        }.then { value: Exception ->
-            assertEquals(exception.message, "exception message")
-        }
+            assertEquals(value, "string")
+            FxaResult.fromException<Void>(Exception("exception message"))
+        }.then({
+            fail("valueListener should not be called")
+            FxaResult<Void>()
+        }, { value: Exception ->
+            assertEquals(value.message, "exception message")
+            FxaResult()
+        })
     }
 }

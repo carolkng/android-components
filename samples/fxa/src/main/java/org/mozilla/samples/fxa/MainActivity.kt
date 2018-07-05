@@ -55,11 +55,13 @@ open class MainActivity : AppCompatActivity() {
             val code = url.getQueryParameter("code")
             val state = url.getQueryParameter("state")
 
-            val handleAuth = { value: OAuthInfo? -> account?.getProfile() }
+            val handleAuth = { _ -> account?.getProfile() }
             val handleProfile = { value: Profile? ->
-                value?.let { runOnUiThread {
-                    txtView.text = getString(R.string.signed_in, "${it.displayName ?: ""} ${it.email}")
-                }}
+                value?.let {
+                    runOnUiThread {
+                        txtView.text = getString(R.string.signed_in, "${it.displayName ?: ""} ${it.email}")
+                    }
+                }
                 FxaResult<Void>()
             }
             account?.completeOAuthFlow(code, state)?.then(handleAuth)?.then(handleProfile)
