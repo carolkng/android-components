@@ -6,6 +6,7 @@ package mozilla.components.service.fxa
 
 import java.io.Closeable
 import com.sun.jna.Pointer
+import kotlinx.coroutines.experimental.runBlocking
 
 /**
  * Base class that wraps an non-optional [Pointer] representing a pointer to a Rust object.
@@ -32,13 +33,11 @@ abstract class RustObject<T> : Closeable {
     protected abstract fun destroyPointer(p: T)
 
     override fun close() {
-        if (this.rawPointer != null) {
-            this.destroyPointer(this.consumePointer())
+        runBlocking(FxaClient.THREAD_CONTEXT) {
+            if (rawPointer != null) {
+                destroyPointer(consumePointer())
+            }
         }
-    }
-
-    protected fun finalize() {
-        this.close()
     }
 
     companion object {
