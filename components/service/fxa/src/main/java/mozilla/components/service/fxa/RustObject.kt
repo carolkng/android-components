@@ -30,12 +30,12 @@ abstract class RustObject<T> : Closeable {
         return p
     }
 
-    protected abstract fun destroyPointer(p: T)
+    protected abstract fun destroy(p: T)
 
     override fun close() {
         runBlocking(FxaClient.THREAD_CONTEXT) {
             if (rawPointer != null) {
-                destroyPointer(consumePointer())
+                destroy(consumePointer())
             }
         }
     }

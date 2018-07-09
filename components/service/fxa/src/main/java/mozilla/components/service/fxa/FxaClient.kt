@@ -12,14 +12,14 @@ import com.sun.jna.PointerType
 import kotlinx.coroutines.experimental.newSingleThreadContext
 
 @Suppress("FunctionNaming", "TooManyFunctions")
-interface FxaClient : Library {
+internal interface FxaClient : Library {
     companion object {
         private const val JNA_LIBRARY_NAME = "fxa_client"
-        lateinit var JNA_NATIVE_LIB: Any
-        lateinit var INSTANCE: FxaClient
+        private val JNA_NATIVE_LIB: Any
+        internal val INSTANCE: FxaClient
         internal val THREAD_CONTEXT = newSingleThreadContext("fxaClientThread")
 
-        fun init() {
+        init {
             System.loadLibrary("crypto")
             System.loadLibrary("ssl")
             System.loadLibrary("fxa_client")
@@ -32,9 +32,6 @@ interface FxaClient : Library {
     enum class ErrorCode {
         NoError, Other, AuthenticationError, InternalPanic
     }
-
-    class RawFxAccount : PointerType()
-    class RawConfig : PointerType()
 
     fun fxa_get_release_config(e: Error.ByReference): RawConfig
     fun fxa_get_custom_config(content_base: String, e: Error.ByReference): RawConfig
@@ -79,3 +76,6 @@ interface FxaClient : Library {
     fun fxa_profile_free(ptr: Pointer)
     fun fxa_sync_keys_free(ptr: Pointer)
 }
+
+class RawFxAccount : PointerType()
+class RawConfig : PointerType()
