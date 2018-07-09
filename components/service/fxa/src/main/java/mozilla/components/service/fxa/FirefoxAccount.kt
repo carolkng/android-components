@@ -4,7 +4,10 @@
 
 package mozilla.components.service.fxa
 
-class FirefoxAccount(override var rawPointer: RawFxAccount?) : RustObject<RawFxAccount>() {
+import android.content.Context
+import android.net.Uri
+
+class FirefoxAccount(override var rawPointer: FxaClient.RawFxAccount?) : RustObject<FxaClient.RawFxAccount>() {
 
     constructor(config: Config, clientId: String): this(null) {
         this.rawPointer = safeSync { e -> FxaClient.INSTANCE.fxa_new(config.consumePointer(), clientId, e) }
@@ -20,6 +23,20 @@ class FirefoxAccount(override var rawPointer: RawFxAccount?) : RustObject<RawFxA
             val p = FxaClient.INSTANCE.fxa_begin_oauth_flow(validPointer(), redirectURI, scope, wantsKeys, e)
             getAndConsumeString(p) ?: ""
         }
+    }
+
+    fun openCustomOAuthTab(redirectURI: String, scopes: Array<String>, wantsKeys: Boolean, context: Context) {
+        val openTab = { value: String? ->
+            val customTabsIntent = CustomTabsIntent.Builder()
+                    .addDefaultShareMenuItem()
+                    .setShowTitle(true)
+                    .build()
+
+            customTabsIntent.intent.data = Uri.parse(value)
+            customTabsIntent.launchUrl(context, Uri.parse(value))
+            FxaResult<Void>()
+        }
+        this.beginOAuthFlow(redirectURI, scopes, wantsKeys).then(openTab)
     }
 
     fun getProfile(ignoreCache: Boolean): FxaResult<Profile> {

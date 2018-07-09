@@ -34,7 +34,7 @@ open class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         findViewById<View>(R.id.button).setOnClickListener {
-            openOAuthTab()
+            account.openCustomOAuthTab()
         }
 
         Config.custom(CONFIG_URL).then { value: Config? ->
