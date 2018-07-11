@@ -30,6 +30,19 @@ class FxaResultTest {
     }
 
     @Test
+    fun thenWithThrownException() {
+        FxaResult.fromValue(42).then { value: Int ->
+            throw Exception("exception message")
+            FxaResult<Void>()
+        }.then({
+            fail("valueListener should not be called")
+            FxaResult<Void>()
+        }, { value: Exception ->
+            assertEquals(value.message, "exception message")
+            FxaResult()
+        })
+    }
+    @Test
     fun resultChaining() {
         FxaResult.fromValue(42).then { value: Int ->
             assertEquals(value, 42)

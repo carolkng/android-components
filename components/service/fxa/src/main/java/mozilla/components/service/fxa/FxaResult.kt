@@ -93,12 +93,17 @@ class FxaResult<T> {
         val result = FxaResult<U>()
         val listener = object : Listener<T> {
             override fun onValue(value: T) {
-                result.completeFrom(valueListener.onValue(value))
+                try {
+                    result.completeFrom(valueListener.onValue(value))
+                } catch (ex: FxaException) {
+                    result.completeFrom(FxaResult.fromException(ex))
+                }
             }
 
             override fun onException(exception: Exception) {
                 if (exceptionListener == null) {
-                    return
+                    // Do not swallow thrown exceptions if a listener is not present
+                    throw exception
                 }
 
                 result.completeFrom(exceptionListener.onException(exception))

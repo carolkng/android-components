@@ -37,9 +37,11 @@ open class MainActivity : AppCompatActivity() {
             openOAuthTab()
         }
 
-        Config.custom(CONFIG_URL).then { value: Config ->
-            account = FirefoxAccount(value, CLIENT_ID)
-            FxaResult.fromValue(account)
+        Config.custom(CONFIG_URL).then { value: Config? ->
+            value?.let {
+                account = FirefoxAccount(it, CLIENT_ID)
+                FxaResult.fromValue(account)
+            }
         }
     }
 
@@ -59,10 +61,12 @@ open class MainActivity : AppCompatActivity() {
             val code = url.getQueryParameter("code")
             val state = url.getQueryParameter("state")
 
-            val handleAuth = { _: OAuthInfo -> account?.getProfile() }
-            val handleProfile = { value: Profile ->
-                runOnUiThread {
-                    txtView.text = getString(R.string.signed_in, "${value.displayName ?: ""} ${value.email}")
+            val handleAuth = { _: OAuthInfo? -> account?.getProfile() }
+            val handleProfile = { value: Profile? ->
+                value?.let {
+                    runOnUiThread {
+                        txtView.text = getString(R.string.signed_in, "${it.displayName ?: ""} ${it.email}")
+                    }
                 }
                 FxaResult<Void>()
             }
@@ -81,8 +85,8 @@ open class MainActivity : AppCompatActivity() {
     }
 
     private fun openOAuthTab() {
-        val valueListener = { value: String ->
-            openTab(value)
+        val valueListener = { value: String? ->
+            value?.let { openTab(it) }
             FxaResult<Void>()
         }
 
