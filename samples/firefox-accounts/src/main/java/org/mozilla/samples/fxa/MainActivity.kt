@@ -109,13 +109,21 @@ open class MainActivity : AppCompatActivity(), LoginFragment.OnLoginCompleteList
 
     private fun openWebView(url: String) {
         supportFragmentManager?.beginTransaction()?.apply {
+<<<<<<< HEAD
             replace(R.id.container, LoginFragment.create(url, REDIRECT_URL))
+=======
+            replace(R.id.container, ViewFragment.create(url, REDIRECT_URL))
+>>>>>>> Closes #342: Support Webview for FxA auth flow
             addToBackStack("open webView")
             commit()
         }
     }
 
+<<<<<<< HEAD
     override fun onLoginComplete(code: String, state: String, fragment: LoginFragment) {
+=======
+    override fun onLoginComplete(code: String, state: String, fragment: ViewFragment) {
+>>>>>>> Closes #342: Support Webview for FxA auth flow
         val txtView: TextView = findViewById(R.id.txtView)
         val handleAuth = { _: OAuthInfo -> account?.getProfile() }
         val handleProfile = { value: Profile ->

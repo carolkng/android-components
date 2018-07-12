@@ -39,6 +39,7 @@
             android:text="@string/log_out" />
     </LinearLayout>
 
+
     <TextView
         android:id="@+id/txtView"
         android:layout_below="@+id/buttonList"
