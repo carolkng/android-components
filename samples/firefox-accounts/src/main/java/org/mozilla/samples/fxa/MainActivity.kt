@@ -13,12 +13,11 @@ import android.content.Intent
 import android.widget.TextView
 import mozilla.components.service.fxa.Config
 import mozilla.components.service.fxa.FirefoxAccount
-import mozilla.components.service.fxa.FxaResult
 import mozilla.components.service.fxa.OAuthInfo
 import mozilla.components.service.fxa.Profile
 
 
-open class MainActivity : AppCompatActivity() {
+open class MainActivity : AppCompatActivity(), ViewFragment.OnLoginCompleteListener {
 
     private var account: FirefoxAccount? = null
     private var scopes: Array<String> = arrayOf("profile")
@@ -37,8 +36,12 @@ open class MainActivity : AppCompatActivity() {
             account = FirefoxAccount(value, CLIENT_ID, REDIRECT_URL)
         }
 
-        findViewById<View>(R.id.button).setOnClickListener {
+        findViewById<View>(R.id.buttonCustomTabs).setOnClickListener {
             account?.beginOAuthFlow(scopes, false)?.whenComplete { openTab(it) }
+        }
+
+        findViewById<View>(R.id.buttonWebView).setOnClickListener {
+            account?.beginOAuthFlow(scopes, false)?.whenComplete { openWebView(it) }
         }
     }
 
@@ -75,6 +78,30 @@ open class MainActivity : AppCompatActivity() {
                 }
             }
             account?.completeOAuthFlow(code, state)?.then(handleAuth)?.whenComplete(handleProfile)
+        }
+    }
+
+    private fun openWebView(url: String) {
+        supportFragmentManager?.beginTransaction()?.apply {
+            replace(R.id.container, ViewFragment.create(url, REDIRECT_URL))
+            addToBackStack("open webView")
+            commit()
+        }
+    }
+
+    override fun onLoginComplete(code: String, state: String, fragment: ViewFragment) {
+        val txtView: TextView = findViewById(R.id.txtView)
+        val handleAuth = { _: OAuthInfo -> account?.getProfile() }
+        val handleProfile = { value: Profile ->
+            runOnUiThread {
+                txtView.text = getString(R.string.signed_in, "${value.displayName ?: ""} ${value.email}")
+            }
+        }
+
+        account?.completeOAuthFlow(code, state)?.then(handleAuth)?.whenComplete(handleProfile)
+        supportFragmentManager?.beginTransaction()?.apply {
+            remove(fragment)
+            commit()
         }
     }
 }

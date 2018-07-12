@@ -2,6 +2,15 @@
 <!-- This Source Code Form is subject to the terms of the Mozilla Public
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="org.mozilla.samples.fxa.MainActivity">
+
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -10,10 +19,15 @@
     tools:context="org.mozilla.samples.fxa.MainActivity">
 
     <Button
-        android:id="@+id/button"
+        android:id="@+id/buttonCustomTabs"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/sign_in" />
+        android:text="@string/sign_in_customtabs" />
+    <Button
+        android:id="@+id/buttonWebView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/sign_in_webview" />
 
     <TextView
         android:id="@+id/txtView"
@@ -21,3 +35,5 @@
         android:layout_height="wrap_content" />
 
 </LinearLayout>
+
+</FrameLayout>
