@@ -72,6 +72,13 @@ class FirefoxAccount(override var rawPointer: RawFxAccount?) : RustObject<RawFxA
         }
     }
 
+    fun fullOAuthFlow(scopes: Array<String>, wantsKeys: Boolean) {
+        this.beginOAuthFlow(scopes, wantsKeys).then { authUrl: String ->
+
+            FxaResult<Void>()
+        }
+    }
+
     companion object {
         fun from(
             config: Config,

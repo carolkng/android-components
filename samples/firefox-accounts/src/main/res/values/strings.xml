@@ -8,4 +8,5 @@
     <string name="signed_in">Signed in: %1$s</string>
     <string name="sign_in_webview">FxA sign in: webview</string>
     <string name="sign_in_customtabs">FxA sign in: custom tab</string>
+    <string name="sign_in_convenience">FxA sign in: convenience method</string>
 </resources>

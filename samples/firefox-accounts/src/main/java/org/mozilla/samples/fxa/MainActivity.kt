@@ -43,6 +43,10 @@ open class MainActivity : AppCompatActivity(), ViewFragment.OnLoginCompleteListe
         findViewById<View>(R.id.buttonWebView).setOnClickListener {
             account?.beginOAuthFlow(scopes, false)?.whenComplete { openWebView(it) }
         }
+
+        findViewById<View>(R.id.buttonConvenience).setOnClickListener {
+            account?.fullOAuthFlow(scopes, false)
+        }
     }
 
     override fun onDestroy() {
