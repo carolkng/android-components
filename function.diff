@@ -1,0 +1,37 @@
+diff --git a/components/service/firefox-accounts/src/main/java/mozilla/components/service/fxa/FirefoxAccount.kt b/components/service/firefox-accounts/src/main/java/mozilla/components/service/fxa/FirefoxAccount.kt
+index e5bacd8..3e6e46b 100644
+--- a/components/service/firefox-accounts/src/main/java/mozilla/components/service/fxa/FirefoxAccount.kt
++++ b/components/service/firefox-accounts/src/main/java/mozilla/components/service/fxa/FirefoxAccount.kt
+@@ -4,7 +4,10 @@
+ 
+ package mozilla.components.service.fxa
+ 
+-class FirefoxAccount(override var rawPointer: RawFxAccount?) : RustObject<RawFxAccount>() {
++import android.content.Context
++import android.net.Uri
++
++class FirefoxAccount(override var rawPointer: FxaClient.RawFxAccount?) : RustObject<FxaClient.RawFxAccount>() {
+ 
+     constructor(config: Config, clientId: String, redirectUri: String): this(null) {
+         this.rawPointer = safeSync { e ->
+@@ -24,6 +27,20 @@ class FirefoxAccount(override var rawPointer: RawFxAccount?) : RustObject<RawFxA
+         }
+     }
+ 
++    fun openCustomOAuthTab(redirectURI: String, scopes: Array<String>, wantsKeys: Boolean, context: Context) {
++        val openTab = { value: String? ->
++            val customTabsIntent = CustomTabsIntent.Builder()
++                    .addDefaultShareMenuItem()
++                    .setShowTitle(true)
++                    .build()
++
++            customTabsIntent.intent.data = Uri.parse(value)
++            customTabsIntent.launchUrl(context, Uri.parse(value))
++            FxaResult<Void>()
++        }
++        this.beginOAuthFlow(redirectURI, scopes, wantsKeys).then(openTab)
++    }
++
+     fun getProfile(ignoreCache: Boolean): FxaResult<Profile> {
+         return safeAsync { e ->
+             val p = FxaClient.INSTANCE.fxa_profile(validPointer(), ignoreCache, e)
