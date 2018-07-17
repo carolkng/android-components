@@ -4,6 +4,10 @@
 
 package mozilla.components.service.fxa
 
+import android.content.Context
+import android.net.Uri
+import android.webkit.WebView
+
 class FirefoxAccount(override var rawPointer: RawFxAccount?) : RustObject<RawFxAccount>() {
 
     constructor(config: Config, clientId: String, redirectUri: String): this(null) {
@@ -24,6 +28,38 @@ class FirefoxAccount(override var rawPointer: RawFxAccount?) : RustObject<RawFxA
         }
     }
 
+    // NOTE: For this to ever work properly, the client has to manually set an intent filter with
+    //       the redirectUri anyways, so it's not really worth pursuing. If we want to provide a
+    //       real convenience method, I'd prefer something that doesn't require a bunch of extra
+    //       work in the middle
+//    fun openCustomOAuthTab(redirectURI: String, scopes: Array<String>, wantsKeys: Boolean, context: Context) {
+//        val openTab = { value: String? ->
+//            val customTabsIntent = CustomTabsIntent.Builder()
+//                    .addDefaultShareMenuItem()
+//                    .setShowTitle(true)
+//                    .build()
+//
+//            customTabsIntent.intent.data = Uri.parse(value)
+//            customTabsIntent.launchUrl(context, Uri.parse(value))
+//            FxaResult<Void>()
+//        }
+//        this.beginOAuthFlow(scopes, wantsKeys).then(openTab)
+//    }
+
+    /**
+     * Takes a WebView container and loads a WebView with the intent of completing the OAuth flow,
+     * and automatically mutates the FxA state.
+     */
+    fun webviewOAuthFlow(
+            redirectUri: String,
+            scopes: Array<String>,
+            wantsKeys: Boolean,
+            webview: WebView) {
+        val openView = {
+
+        }
+        this.beginOAuthFlow(scopes, wantsKeys).then(openView)
+    }
     fun getProfile(ignoreCache: Boolean): FxaResult<Profile> {
         return safeAsync { e ->
             val p = FxaClient.INSTANCE.fxa_profile(validPointer(), ignoreCache, e)
