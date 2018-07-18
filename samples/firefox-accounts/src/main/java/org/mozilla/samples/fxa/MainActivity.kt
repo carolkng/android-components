@@ -122,6 +122,10 @@ open class MainActivity : AppCompatActivity(), LoginFragment.OnLoginCompleteList
             runOnUiThread {
                 txtView.text = getString(R.string.signed_in, "${value.displayName ?: ""} ${value.email}")
             }
+            account?.toJSONString().let {
+                getSharedPreferences(FXA_STATE_PREFS_KEY, Context.MODE_PRIVATE).edit()
+                        .putString(FXA_STATE_KEY, it).apply()
+            }
         }
 
         account?.completeOAuthFlow(code, state)?.then(handleAuth)?.whenComplete(handleProfile)
