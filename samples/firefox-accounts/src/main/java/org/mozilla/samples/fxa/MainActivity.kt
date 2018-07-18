@@ -11,14 +11,21 @@ import android.support.v7.app.AppCompatActivity
 import android.support.customtabs.CustomTabsIntent
 import android.view.View
 import android.content.Intent
+import android.support.v4.app.Fragment
+import android.util.AttributeSet
 import android.widget.TextView
+import mozilla.components.browser.engine.gecko.GeckoEngine
+import mozilla.components.browser.engine.system.SystemEngine
+import mozilla.components.concept.engine.Engine
+import mozilla.components.concept.engine.EngineView
 import mozilla.components.service.fxa.Config
 import mozilla.components.service.fxa.FirefoxAccount
 import mozilla.components.service.fxa.FxaResult
 import mozilla.components.service.fxa.OAuthInfo
 import mozilla.components.service.fxa.Profile
+import org.mozilla.geckoview.GeckoRuntime
 
-open class MainActivity : AppCompatActivity(), LoginFragment.OnLoginCompleteListener {
+open class MainActivity : AppCompatActivity(), LoginFragment.OnLoginCompleteListener, EngineViewLoginFragment.OnLoginCompleteListener {
 
     private var account: FirefoxAccount? = null
     private var scopes: Array<String> = arrayOf("profile")
@@ -60,13 +67,22 @@ open class MainActivity : AppCompatActivity(), LoginFragment.OnLoginCompleteList
             account?.beginOAuthFlow(scopes, false)?.whenComplete { openWebView(it) }
         }
 
+        findViewById<View>(R.id.buttonEngineView).setOnClickListener {
+            account?.beginOAuthFlow(scopes, false)?.whenComplete { openEngineView(it) }
+        }
+
         findViewById<View>(R.id.buttonLogout).setOnClickListener {
             getSharedPreferences(FXA_STATE_PREFS_KEY, Context.MODE_PRIVATE).edit().putString(FXA_STATE_KEY, "").apply()
             val txtView: TextView = findViewById(R.id.txtView)
             txtView.text = getString(R.string.logged_out)
         }
     }
-
+    override fun onCreateView(parent: View?, name: String?, context: Context, attrs: AttributeSet?): View? =
+            when (name) {
+//                EngineView::class.java.name -> GeckoEngine(GeckoRuntime.getDefault(applicationContext)).createView(context, attrs).asView()
+                EngineView::class.java.name -> SystemEngine().createView(context, attrs).asView()
+                else -> super.onCreateView(parent, name, context, attrs)
+            }
     override fun onDestroy() {
         super.onDestroy()
         account?.close()
@@ -115,7 +131,15 @@ open class MainActivity : AppCompatActivity(), LoginFragment.OnLoginCompleteList
         }
     }
 
-    override fun onLoginComplete(code: String, state: String, fragment: LoginFragment) {
+    private fun openEngineView(url: String) {
+        supportFragmentManager?.beginTransaction()?.apply {
+            replace(R.id.container, EngineViewLoginFragment.create(url, REDIRECT_URL))
+            addToBackStack(null)
+            commit()
+        }
+    }
+
+    override fun onLoginComplete(code: String, state: String, fragment: Fragment) {
         val txtView: TextView = findViewById(R.id.txtView)
         val handleAuth = { _: OAuthInfo -> account?.getProfile() }
         val handleProfile = { value: Profile ->

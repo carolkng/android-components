@@ -4,24 +4,25 @@
 
 package org.mozilla.samples.fxa
 
-import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
 import android.support.v4.app.Fragment
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.webkit.CookieManager
-import android.webkit.WebView
-import android.webkit.WebViewClient
+import kotlinx.android.synthetic.main.fragment_engine_view_login.*
+import mozilla.components.browser.engine.system.SystemEngine
+import mozilla.components.browser.engine.system.SystemEngineSession
+import mozilla.components.browser.engine.system.SystemEngineView
+import mozilla.components.concept.engine.EngineSession
+import mozilla.components.concept.engine.EngineView
 
-class LoginFragment : Fragment() {
+class EngineViewLoginFragment : Fragment() {
 
     private lateinit var authUrl: String
     private lateinit var redirectUrl: String
-    private var mWebView: WebView? = null
     private var listener: OnLoginCompleteListener? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -32,39 +33,32 @@ class LoginFragment : Fragment() {
         }
     }
 
-    @SuppressLint("SetJavaScriptEnabled")
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
-        val view: View = inflater.inflate(R.layout.fragment_view, container, false)
-        val webView = view.findViewById<WebView>(R.id.webview)
-        // Need JS, cookies and localStorage.
-        webView.settings.domStorageEnabled = true
-        webView.settings.javaScriptEnabled = true
-        CookieManager.getInstance().setAcceptCookie(true)
+        return inflater.inflate(R.layout.fragment_engine_view_login, container, false)
+    }
 
-        webView.webViewClient = object : WebViewClient() {
-            override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
-                if (url != null && url.startsWith(redirectUrl)) {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        val session = SystemEngineSession()
+        session.register(object : EngineSession.Observer {
+            override fun onLocationChange(url: String) {
+                Log.e("onLoc", url)
+                if (url.startsWith(redirectUrl)) {
                     val uri = Uri.parse(url)
                     val code = uri.getQueryParameter("code")
                     val state = uri.getQueryParameter("state")
                     if (code != null && state != null) {
-                        listener?.onLoginComplete(code, state, this@LoginFragment)
+                        listener?.onLoginComplete(code, state, this@EngineViewLoginFragment)
                     }
                 }
-
-                super.onPageStarted(view, url, favicon)
+                super.onLocationChange(url)
             }
-        }
-        webView.loadUrl(authUrl)
-
-        mWebView?.destroy()
-        mWebView = webView
-
-        return view
+        })
+        session.loadUrl(authUrl)
+        engineView.render(session)
     }
 
-    @Suppress("TooGenericExceptionThrown")
     override fun onAttach(context: Context) {
         super.onAttach(context)
         if (context is OnLoginCompleteListener) {
@@ -79,16 +73,6 @@ class LoginFragment : Fragment() {
         listener = null
     }
 
-    override fun onPause() {
-        super.onPause()
-        mWebView?.onPause()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        mWebView?.onResume()
-    }
-
     interface OnLoginCompleteListener {
         fun onLoginComplete(code: String, state: String, fragment: Fragment)
     }
@@ -97,8 +81,8 @@ class LoginFragment : Fragment() {
         const val AUTH_URL = "authUrl"
         const val REDIRECT_URL = "redirectUrl"
 
-        fun create(authUrl: String, redirectUrl: String): LoginFragment =
-                LoginFragment().apply {
+        fun create(authUrl: String, redirectUrl: String): EngineViewLoginFragment =
+                EngineViewLoginFragment().apply {
                     arguments = Bundle().apply {
                         putString(AUTH_URL, authUrl)
                         putString(REDIRECT_URL, redirectUrl)
