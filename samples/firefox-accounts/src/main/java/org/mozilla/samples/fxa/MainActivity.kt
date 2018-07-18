@@ -11,6 +11,8 @@ import android.support.v7.app.AppCompatActivity
 import android.support.customtabs.CustomTabsIntent
 import android.view.View
 import android.content.Intent
+import android.support.v4.app.Fragment
+import android.util.Log
 import android.widget.TextView
 import mozilla.components.service.fxa.Config
 import mozilla.components.service.fxa.FirefoxAccount
@@ -18,10 +20,12 @@ import mozilla.components.service.fxa.FxaResult
 import mozilla.components.service.fxa.OAuthInfo
 import mozilla.components.service.fxa.Profile
 
-open class MainActivity : AppCompatActivity(), LoginFragment.OnLoginCompleteListener {
+open class MainActivity : AppCompatActivity(), LoginFragment.OnLoginCompleteListener,
+        EngineViewLoginFragment.OnLoginCompleteListener {
 
     private var account: FirefoxAccount? = null
-    private var scopes: Array<String> = arrayOf("profile")
+    private var scopes: Array<String> = arrayOf("profile", "https://identity.mozilla.com/apps/oldsync")
+    private val wantsKeys = false
 
     companion object {
         const val CLIENT_ID = "12cc4070a481bc73"
@@ -53,11 +57,15 @@ open class MainActivity : AppCompatActivity(), LoginFragment.OnLoginCompleteList
         }
 
         findViewById<View>(R.id.buttonCustomTabs).setOnClickListener {
-            account?.beginOAuthFlow(scopes, false)?.whenComplete { openTab(it) }
+            account?.beginOAuthFlow(scopes, wantsKeys)?.whenComplete { openTab(it) }
         }
 
         findViewById<View>(R.id.buttonWebView).setOnClickListener {
-            account?.beginOAuthFlow(scopes, false)?.whenComplete { openWebView(it) }
+            account?.beginOAuthFlow(scopes, wantsKeys)?.whenComplete { openWebView(it) }
+        }
+
+        findViewById<View>(R.id.buttonEngineView).setOnClickListener {
+            account?.beginOAuthFlow(scopes, wantsKeys)?.whenComplete { openEngineView(it) }
         }
 
         findViewById<View>(R.id.buttonLogout).setOnClickListener {
@@ -115,7 +123,16 @@ open class MainActivity : AppCompatActivity(), LoginFragment.OnLoginCompleteList
         }
     }
 
-    override fun onLoginComplete(code: String, state: String, fragment: LoginFragment) {
+    private fun openEngineView(url: String) {
+        supportFragmentManager?.beginTransaction()?.apply {
+            replace(R.id.container, EngineViewLoginFragment.create(url, REDIRECT_URL))
+            addToBackStack("open engineView")
+            commit()
+        }
+    }
+
+    override fun onLoginComplete(code: String, state: String, fragment: Fragment) {
+        Log.e("called", "onLoginComplete")
         val txtView: TextView = findViewById(R.id.txtView)
         val handleAuth = { _: OAuthInfo -> account?.getProfile() }
         val handleProfile = { value: Profile ->

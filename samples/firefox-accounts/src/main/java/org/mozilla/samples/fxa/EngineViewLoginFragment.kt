@@ -8,6 +8,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.WebView
+import mozilla.components.browser.engine.system.SystemEngine
+import mozilla.components.browser.engine.system.SystemEngineView
+import mozilla.components.concept.engine.EngineView
+
 
 private const val AUTH_URL = "authUrl"
 private const val REDIRECT_URL = "redirectUrl"
@@ -30,7 +34,7 @@ class EngineViewLoginFragment : Fragment() {
                               savedInstanceState: Bundle?): View? {
         val v: View = inflater.inflate(R.layout.fragment_engine_view_login, container, false)
         val wv: WebView = v.findViewById(R.id.engineview)
-
+        val engine: EngineView = SystemEngine().createView(this.context!!, attrs = null)
         return v
     }
 
@@ -50,7 +54,7 @@ class EngineViewLoginFragment : Fragment() {
     }
 
     interface OnLoginCompleteListener {
-        fun onLoginComplete(code: String, state: String, fragment: EngineViewLoginFragment)
+        fun onLoginComplete(code: String, state: String, fragment: Fragment)
     }
 
     companion object {

@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
 import android.support.v4.app.Fragment
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -41,7 +42,9 @@ class LoginFragment : Fragment() {
 
         wv.webViewClient = object : WebViewClient() {
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+                Log.e("called", url)
                 if (url != null && url.startsWith(redirectUrl)) {
+                    Log.e("called", "continuing LoginFragment")
                     val uri = Uri.parse(url)
                     val code = uri.getQueryParameter("code")
                     val state = uri.getQueryParameter("state")
@@ -74,7 +77,7 @@ class LoginFragment : Fragment() {
     }
 
     interface OnLoginCompleteListener {
-        fun onLoginComplete(code: String, state: String, fragment: LoginFragment)
+        fun onLoginComplete(code: String, state: String, fragment: Fragment)
     }
 
     companion object {
