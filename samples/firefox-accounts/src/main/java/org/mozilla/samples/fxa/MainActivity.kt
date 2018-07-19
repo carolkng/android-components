@@ -27,8 +27,12 @@ import org.mozilla.geckoview.GeckoRuntime
 
 open class MainActivity : AppCompatActivity(), LoginFragment.OnLoginCompleteListener, EngineViewLoginFragment.OnLoginCompleteListener {
 
+    private val systemEngine = SystemEngine()
+    private val geckoEngine = GeckoEngine(GeckoRuntime.create(applicationContext))
+
     private var account: FirefoxAccount? = null
     private var scopes: Array<String> = arrayOf("profile")
+    private val engine = systemEngine
 
     companion object {
         const val CLIENT_ID = "12cc4070a481bc73"
@@ -79,8 +83,7 @@ open class MainActivity : AppCompatActivity(), LoginFragment.OnLoginCompleteList
     }
     override fun onCreateView(parent: View?, name: String?, context: Context, attrs: AttributeSet?): View? =
             when (name) {
-//                EngineView::class.java.name -> GeckoEngine(GeckoRuntime.getDefault(applicationContext)).createView(context, attrs).asView()
-                EngineView::class.java.name -> SystemEngine().createView(context, attrs).asView()
+                EngineView::class.java.name -> engine.createView(context, attrs).asView()
                 else -> super.onCreateView(parent, name, context, attrs)
             }
     override fun onDestroy() {
