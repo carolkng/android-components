@@ -1,0 +1,363 @@
+diff --git a/layout b/layout
+new file mode 100644
+index 0000000..0876c58
+--- /dev/null
++++ b/layout
+@@ -0,0 +1,50 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- This Source Code Form is subject to the terms of the Mozilla Public
++   - License, v. 2.0. If a copy of the MPL was not distributed with this
++   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
++
++<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
++    xmlns:tools="http://schemas.android.com/tools"
++    android:layout_width="match_parent"
++    android:layout_height="match_parent"
++    android:orientation="vertical"
++    android:id="@+id/container"
++    tools:context="org.mozilla.samples.fxa.MainActivity">
++
++    <LinearLayout
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:layout_alignParentStart="true"
++        android:layout_alignParentTop="true"
++        android:orientation="vertical"
++        android:id="@+id/buttonList"
++        tools:context="org.mozilla.samples.fxa.MainActivity">
++
++        <Button
++            android:id="@+id/buttonCustomTabs"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:text="@string/sign_in_customtabs" />
++
++        <Button
++            android:id="@+id/buttonWebView"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:text="@string/sign_in_webview" />
++
++        <Button
++            android:id="@+id/buttonLogout"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:text="@string/log_out" />
++    </LinearLayout>
++
++    <TextView
++        android:id="@+id/txtView"
++        android:layout_below="@+id/buttonList"
++        android:layout_width="wrap_content"
++        android:layout_height="wrap_content"
++        android:layout_gravity="center"
++        android:text="@string/log_out"/>
++
++</RelativeLayout>
+diff --git a/samples/firefox-accounts/build.gradle b/samples/firefox-accounts/build.gradle
+index 574e3da..3d8844f 100644
+--- a/samples/firefox-accounts/build.gradle
++++ b/samples/firefox-accounts/build.gradle
+@@ -44,6 +44,8 @@ android {
+ 
+ 
+ dependencies {
++    implementation project(':browser-engine-system')
++    implementation project(':concept-engine') //TODO: figure out if needed
+     implementation project(':service-firefox-accounts')   
+ 
+     implementation "org.jetbrains.kotlin:kotlin-stdlib:${rootProject.ext.dependencies['kotlin']}"
+diff --git a/samples/firefox-accounts/src/main/java/org/mozilla/samples/fxa/EngineViewLoginFragment.kt b/samples/firefox-accounts/src/main/java/org/mozilla/samples/fxa/EngineViewLoginFragment.kt
+new file mode 100644
+index 0000000..dc3c520
+--- /dev/null
++++ b/samples/firefox-accounts/src/main/java/org/mozilla/samples/fxa/EngineViewLoginFragment.kt
+@@ -0,0 +1,67 @@
++package org.mozilla.samples.fxa
++
++import android.annotation.SuppressLint
++import android.content.Context
++import android.os.Bundle
++import android.support.v4.app.Fragment
++import android.view.LayoutInflater
++import android.view.View
++import android.view.ViewGroup
++import android.webkit.WebView
++import mozilla.components.browser.engine.system.SystemEngine
++import mozilla.components.browser.engine.system.SystemEngineView
++import mozilla.components.concept.engine.EngineView
++
++
++private const val AUTH_URL = "authUrl"
++private const val REDIRECT_URL = "redirectUrl"
++
++class EngineViewLoginFragment : Fragment() {
++    private lateinit var authUrl: String
++    private lateinit var redirectUrl: String
++    private var listener: OnLoginCompleteListener? = null
++
++    override fun onCreate(savedInstanceState: Bundle?) {
++        super.onCreate(savedInstanceState)
++        arguments?.let {
++            authUrl = it.getString(AUTH_URL)
++            redirectUrl = it.getString(REDIRECT_URL)
++        }
++    }
++
++    @SuppressLint("SetJavaScriptEnabled")
++    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
++                              savedInstanceState: Bundle?): View? {
++        val v: View = inflater.inflate(R.layout.fragment_engine_view_login, container, false)
++        val wv: WebView = v.findViewById(R.id.engineview)
++        val engine: EngineView = SystemEngine().createView(this.context!!, attrs = null)
++        return v
++    }
++
++    @Suppress("TooGenericExceptionThrown")
++    override fun onAttach(context: Context) {
++        super.onAttach(context)
++        if (context is OnLoginCompleteListener) {
++            listener = context
++        } else {
++            throw RuntimeException(context.toString() + " must implement OnLoginCompleteListener")
++        }
++    }
++
++    override fun onDetach() {
++        super.onDetach()
++        listener = null
++    }
++
++    interface OnLoginCompleteListener {
++        fun onLoginComplete(code: String, state: String, fragment: Fragment)
++    }
++
++    companion object {
++        fun create(authUrl: String, redirectUrl: String): EngineViewLoginFragment =
++                EngineViewLoginFragment().apply {
++                    this.authUrl = authUrl
++                    this.redirectUrl = redirectUrl
++                }
++    }
++}
+diff --git a/samples/firefox-accounts/src/main/java/org/mozilla/samples/fxa/LoginFragment.kt b/samples/firefox-accounts/src/main/java/org/mozilla/samples/fxa/LoginFragment.kt
+index e0f6b7c..33f2523 100644
+--- a/samples/firefox-accounts/src/main/java/org/mozilla/samples/fxa/LoginFragment.kt
++++ b/samples/firefox-accounts/src/main/java/org/mozilla/samples/fxa/LoginFragment.kt
+@@ -6,6 +6,7 @@ import android.graphics.Bitmap
+ import android.net.Uri
+ import android.os.Bundle
+ import android.support.v4.app.Fragment
++import android.util.Log
+ import android.view.LayoutInflater
+ import android.view.View
+ import android.view.ViewGroup
+@@ -32,7 +33,7 @@ class LoginFragment : Fragment() {
+     @SuppressLint("SetJavaScriptEnabled")
+     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
+                               savedInstanceState: Bundle?): View? {
+-        val v: View = inflater.inflate(R.layout.fragment_view, container, false)
++        val v: View = inflater.inflate(R.layout.fragment_login, container, false)
+         val wv: WebView = v.findViewById(R.id.webview)
+         // Need JS, cookies and localStorage.
+         wv.settings.domStorageEnabled = true
+@@ -41,7 +42,9 @@ class LoginFragment : Fragment() {
+ 
+         wv.webViewClient = object : WebViewClient() {
+             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
++                Log.e("called", url)
+                 if (url != null && url.startsWith(redirectUrl)) {
++                    Log.e("called", "continuing LoginFragment")
+                     val uri = Uri.parse(url)
+                     val code = uri.getQueryParameter("code")
+                     val state = uri.getQueryParameter("state")
+@@ -74,7 +77,7 @@ class LoginFragment : Fragment() {
+     }
+ 
+     interface OnLoginCompleteListener {
+-        fun onLoginComplete(code: String, state: String, fragment: LoginFragment)
++        fun onLoginComplete(code: String, state: String, fragment: Fragment)
+     }
+ 
+     companion object {
+diff --git a/samples/firefox-accounts/src/main/java/org/mozilla/samples/fxa/MainActivity.kt b/samples/firefox-accounts/src/main/java/org/mozilla/samples/fxa/MainActivity.kt
+index 6b38a5c..25637c2 100644
+--- a/samples/firefox-accounts/src/main/java/org/mozilla/samples/fxa/MainActivity.kt
++++ b/samples/firefox-accounts/src/main/java/org/mozilla/samples/fxa/MainActivity.kt
+@@ -11,6 +11,8 @@ import android.support.v7.app.AppCompatActivity
+ import android.support.customtabs.CustomTabsIntent
+ import android.view.View
+ import android.content.Intent
++import android.support.v4.app.Fragment
++import android.util.Log
+ import android.widget.TextView
+ import mozilla.components.service.fxa.Config
+ import mozilla.components.service.fxa.FirefoxAccount
+@@ -18,10 +20,12 @@ import mozilla.components.service.fxa.FxaResult
+ import mozilla.components.service.fxa.OAuthInfo
+ import mozilla.components.service.fxa.Profile
+ 
+-open class MainActivity : AppCompatActivity(), LoginFragment.OnLoginCompleteListener {
++open class MainActivity : AppCompatActivity(), LoginFragment.OnLoginCompleteListener,
++        EngineViewLoginFragment.OnLoginCompleteListener {
+ 
+     private var account: FirefoxAccount? = null
+-    private var scopes: Array<String> = arrayOf("profile")
++    private var scopes: Array<String> = arrayOf("profile", "https://identity.mozilla.com/apps/oldsync")
++    private val wantsKeys = false
+ 
+     companion object {
+         const val CLIENT_ID = "12cc4070a481bc73"
+@@ -53,11 +57,15 @@ open class MainActivity : AppCompatActivity(), LoginFragment.OnLoginCompleteList
+         }
+ 
+         findViewById<View>(R.id.buttonCustomTabs).setOnClickListener {
+-            account?.beginOAuthFlow(scopes, false)?.whenComplete { openTab(it) }
++            account?.beginOAuthFlow(scopes, wantsKeys)?.whenComplete { openTab(it) }
+         }
+ 
+         findViewById<View>(R.id.buttonWebView).setOnClickListener {
+-            account?.beginOAuthFlow(scopes, false)?.whenComplete { openWebView(it) }
++            account?.beginOAuthFlow(scopes, wantsKeys)?.whenComplete { openWebView(it) }
++        }
++
++        findViewById<View>(R.id.buttonEngineView).setOnClickListener {
++            account?.beginOAuthFlow(scopes, wantsKeys)?.whenComplete { openEngineView(it) }
+         }
+ 
+         findViewById<View>(R.id.buttonLogout).setOnClickListener {
+@@ -115,7 +123,16 @@ open class MainActivity : AppCompatActivity(), LoginFragment.OnLoginCompleteList
+         }
+     }
+ 
+-    override fun onLoginComplete(code: String, state: String, fragment: LoginFragment) {
++    private fun openEngineView(url: String) {
++        supportFragmentManager?.beginTransaction()?.apply {
++            replace(R.id.container, EngineViewLoginFragment.create(url, REDIRECT_URL))
++            addToBackStack("open engineView")
++            commit()
++        }
++    }
++
++    override fun onLoginComplete(code: String, state: String, fragment: Fragment) {
++        Log.e("called", "onLoginComplete")
+         val txtView: TextView = findViewById(R.id.txtView)
+         val handleAuth = { _: OAuthInfo -> account?.getProfile() }
+         val handleProfile = { value: Profile ->
+diff --git a/samples/firefox-accounts/src/main/res/layout/activity_main.xml b/samples/firefox-accounts/src/main/res/layout/activity_main.xml
+index 6162cb2..fd42f10 100644
+--- a/samples/firefox-accounts/src/main/res/layout/activity_main.xml
++++ b/samples/firefox-accounts/src/main/res/layout/activity_main.xml
+@@ -3,41 +3,54 @@
+    - License, v. 2.0. If a copy of the MPL was not distributed with this
+    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+ 
+-<merge xmlns:android="http://schemas.android.com/apk/res/android"
++<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+     xmlns:tools="http://schemas.android.com/tools"
+-    android:id="@+id/container"
+-    android:layout_width="match_parent"
+-    android:layout_height="match_parent"
+-    android:orientation="vertical"
+-    tools:context="org.mozilla.samples.fxa.MainActivity">
+t status
+-
+-<LinearLayout
+     android:layout_width="match_parent"
+     android:layout_height="match_parent"
+     android:orientation="vertical"
++    android:id="@+id/container"
+     tools:context="org.mozilla.samples.fxa.MainActivity">
+ 
+-    <Button
+-        android:id="@+id/buttonCustomTabs"
+-        android:layout_width="wrap_content"
++    <LinearLayout
++        android:layout_width="match_parent"
+         android:layout_height="wrap_content"
+-        android:text="@string/sign_in_customtabs" />
+-    <Button
+-        android:id="@+id/buttonWebView"
+-        android:layout_width="wrap_content"
+-        android:layout_height="wrap_content"
+-        android:text="@string/sign_in_webview" />
+-    <Button
+-        android:id="@+id/buttonLogout"
+-        android:layout_width="wrap_content"
+-        android:layout_height="wrap_content"
+-        android:text="@string/log_out" />
+-</LinearLayout>
++        android:layout_alignParentStart="true"
++        android:layout_alignParentTop="true"
++        android:orientation="vertical"
++        android:id="@+id/buttonList"
++        tools:context="org.mozilla.samples.fxa.MainActivity">
++
++        <Button
++            android:id="@+id/buttonCustomTabs"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:text="@string/sign_in_customtabs" />
++
++        <Button
++            android:id="@+id/buttonWebView"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:text="@string/sign_in_webview" />
++
++        <Button
++            android:id="@+id/buttonEngineView"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:enabled="false"
++            android:text="@string/sign_in_engineview" />
++
++        <Button
++            android:id="@+id/buttonLogout"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:text="@string/log_out" />
++    </LinearLayout>
+ 
+     <TextView
+         android:id="@+id/txtView"
++        android:layout_below="@+id/buttonList"
+         android:layout_width="wrap_content"
+         android:layout_height="wrap_content"
+-        android:layout_gravity="center"/>
++        android:text="@string/log_out"/>
+ 
+-</merge>
++</RelativeLayout>
+\ No newline at end of file
+diff --git a/samples/firefox-accounts/src/main/res/layout/fragment_engine_view_login.xml b/samples/firefox-accounts/src/main/res/layout/fragment_engine_view_login.xml
+new file mode 100644
+index 0000000..cb68015
+--- /dev/null
++++ b/samples/firefox-accounts/src/main/res/layout/fragment_engine_view_login.xml
+@@ -0,0 +1,9 @@
++<?xml version="1.0" encoding="utf-8"?>
++
++<mozilla.components.concept.engine.EngineView xmlns:android="http://schemas.android.com/apk/res/android"
++    xmlns:tools="http://schemas.android.com/tools"
++    android:id="@+id/engineview"
++    android:layout_width="0dp"
++    android:layout_height="0dp"
++    android:layout_weight="1"
++    tools:context=".EngineViewLoginFragment"/>
+diff --git a/samples/firefox-accounts/src/main/res/layout/fragment_view.xml b/samples/firefox-accounts/src/main/res/layout/fragment_login.xml
+similarity index 100%
+rename from samples/firefox-accounts/src/main/res/layout/fragment_view.xml
+rename to samples/firefox-accounts/src/main/res/layout/fragment_login.xml
+diff --git a/samples/firefox-accounts/src/main/res/values/strings.xml b/samples/firefox-accounts/src/main/res/values/strings.xml
+index 41e0f17..c79964a 100644
+--- a/samples/firefox-accounts/src/main/res/values/strings.xml
++++ b/samples/firefox-accounts/src/main/res/values/strings.xml
+@@ -6,6 +6,7 @@
+     <string name="app_name">FxA Android Demo</string>
+     <string name="sign_in_webview">FxA sign in: webview</string>
+     <string name="sign_in_customtabs">FxA sign in: custom tab</string>
++    <string name="sign_in_engineview">FxA sign in: engineview</string>
+     <string name="signed_in">Signed in: %1$s</string>
+     <string name="log_out">FxA Log Out</string>
+     <string name="logged_out">Logged out!</string>

@@ -11,6 +11,7 @@ import android.support.v7.app.AppCompatActivity
 import android.support.customtabs.CustomTabsIntent
 import android.view.View
 import android.content.Intent
+import android.util.Log
 import android.widget.TextView
 import mozilla.components.service.fxa.Config
 import mozilla.components.service.fxa.FirefoxAccount
@@ -21,12 +22,12 @@ import mozilla.components.service.fxa.Profile
 open class MainActivity : AppCompatActivity(), LoginFragment.OnLoginCompleteListener {
 
     private var account: FirefoxAccount? = null
-    private var scopes: Array<String> = arrayOf("profile")
+    private var scopes: Array<String> = arrayOf("profile", "https://identity.mozilla.com/apps/notes")
 
     companion object {
-        const val CLIENT_ID = "12cc4070a481bc73"
-        const val REDIRECT_URL = "fxaclient://android.redirect"
-        const val CONFIG_URL = "https://latest.dev.lcip.org"
+        const val CLIENT_ID = "7f368c6886429f19"
+        const val REDIRECT_URL = "https://mozilla.github.io/notes/fxa/android-redirect.html"
+        const val CONFIG_URL = "https://accounts.firefox.com"
         const val FXA_STATE_PREFS_KEY = "fxaAppState"
         const val FXA_STATE_KEY = "fxaState"
     }
@@ -53,11 +54,11 @@ open class MainActivity : AppCompatActivity(), LoginFragment.OnLoginCompleteList
         }
 
         findViewById<View>(R.id.buttonCustomTabs).setOnClickListener {
-            account?.beginOAuthFlow(scopes, false)?.whenComplete { openTab(it) }
+            account?.beginOAuthFlow(scopes, true)?.whenComplete { openTab(it) }
         }
 
         findViewById<View>(R.id.buttonWebView).setOnClickListener {
-            account?.beginOAuthFlow(scopes, false)?.whenComplete { openWebView(it) }
+            account?.beginOAuthFlow(scopes, true)?.whenComplete { openWebView(it) }
         }
 
         findViewById<View>(R.id.buttonLogout).setOnClickListener {
@@ -88,22 +89,10 @@ open class MainActivity : AppCompatActivity(), LoginFragment.OnLoginCompleteList
         val data = intent.dataString
 
         if (Intent.ACTION_VIEW == action && data != null) {
-            val txtView: TextView = findViewById(R.id.txtView)
             val url = Uri.parse(data)
             val code = url.getQueryParameter("code")
             val state = url.getQueryParameter("state")
-
-            val handleAuth = { _: OAuthInfo -> account?.getProfile() }
-            val handleProfile = { value: Profile ->
-                runOnUiThread {
-                    txtView.text = getString(R.string.signed_in, "${value.displayName ?: ""} ${value.email}")
-                }
-                account?.toJSONString().let {
-                    getSharedPreferences(FXA_STATE_PREFS_KEY, Context.MODE_PRIVATE).edit()
-                            .putString(FXA_STATE_KEY, it).apply()
-                }
-            }
-            account?.completeOAuthFlow(code, state)?.then(handleAuth)?.whenComplete(handleProfile)
+            displayAndPersistProfile(code, state)
         }
     }
 
@@ -116,8 +105,15 @@ open class MainActivity : AppCompatActivity(), LoginFragment.OnLoginCompleteList
     }
 
     override fun onLoginComplete(code: String, state: String, fragment: LoginFragment) {
+        displayAndPersistProfile(code, state)
+        supportFragmentManager?.popBackStack()
+    }
+
+    private fun displayAndPersistProfile(code: String, state: String) {
         val txtView: TextView = findViewById(R.id.txtView)
-        val handleAuth = { _: OAuthInfo -> account?.getProfile() }
+        val handleAuth = { value: OAuthInfo ->
+            account?.getProfile()
+        }
         val handleProfile = { value: Profile ->
             runOnUiThread {
                 txtView.text = getString(R.string.signed_in, "${value.displayName ?: ""} ${value.email}")
@@ -129,6 +125,5 @@ open class MainActivity : AppCompatActivity(), LoginFragment.OnLoginCompleteList
         }
 
         account?.completeOAuthFlow(code, state)?.then(handleAuth)?.whenComplete(handleProfile)
-        supportFragmentManager?.popBackStack()
     }
 }
