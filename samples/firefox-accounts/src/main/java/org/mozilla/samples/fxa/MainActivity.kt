@@ -62,6 +62,10 @@ open class MainActivity : AppCompatActivity(), LoginFragment.OnLoginCompleteList
             account?.beginOAuthFlow(scopes, wantsKeys)?.whenComplete { openWebView(it) }
         }
 
+        findViewById<View>(R.id.buttonEngineView).setOnClickListener {
+            account?.beginOAuthFlow(scopes, wantsKeys)?.whenComplete { openEngineView(it) }
+        }
+
         findViewById<View>(R.id.buttonLogout).setOnClickListener {
             getSharedPreferences(FXA_STATE_PREFS_KEY, Context.MODE_PRIVATE).edit().putString(FXA_STATE_KEY, "").apply()
             val txtView: TextView = findViewById(R.id.txtView)
@@ -103,8 +107,16 @@ open class MainActivity : AppCompatActivity(), LoginFragment.OnLoginCompleteList
 
     private fun openWebView(url: String) {
         supportFragmentManager?.beginTransaction()?.apply {
-            replace(R.id.container, LoginFragment.create(url, REDIRECT_URL))
-            addToBackStack(null)
+            replace(R.id.container, WebViewLoginFragment.create(url, REDIRECT_URL))
+            addToBackStack("open webView")
+            commit()
+        }
+    }
+
+    private fun openEngineView(url: String) {
+        supportFragmentManager?.beginTransaction()?.apply {
+            replace(R.id.container, EngineViewLoginFragment.create(url, REDIRECT_URL))
+            addToBackStack("open engineView")
             commit()
         }
     }

@@ -44,6 +44,8 @@ android {
 
 
 dependencies {
+    implementation project(path: ':concept-engine')
+    implementation project(path: ':browser-engine-system')
     implementation project(':service-firefox-accounts')   
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib:${rootProject.ext.dependencies['kotlin']}"

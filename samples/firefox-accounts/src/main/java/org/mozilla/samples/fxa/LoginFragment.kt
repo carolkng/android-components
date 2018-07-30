@@ -4,25 +4,15 @@
 
 package org.mozilla.samples.fxa
 
-import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.Bitmap
-import android.net.Uri
 import android.os.Bundle
 import android.support.v4.app.Fragment
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import android.webkit.CookieManager
-import android.webkit.WebView
-import android.webkit.WebViewClient
 
-class LoginFragment : Fragment() {
+open class LoginFragment : Fragment() {
 
-    private lateinit var authUrl: String
-    private lateinit var redirectUrl: String
-    private var mWebView: WebView? = null
-    private var listener: OnLoginCompleteListener? = null
+    protected lateinit var authUrl: String
+    protected lateinit var redirectUrl: String
+    protected var listener: OnLoginCompleteListener? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,38 +20,6 @@ class LoginFragment : Fragment() {
             authUrl = it.getString(AUTH_URL)
             redirectUrl = it.getString(REDIRECT_URL)
         }
-    }
-
-    @SuppressLint("SetJavaScriptEnabled")
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
-                              savedInstanceState: Bundle?): View? {
-        val view: View = inflater.inflate(R.layout.fragment_view, container, false)
-        val webView = view.findViewById<WebView>(R.id.webview)
-        // Need JS, cookies and localStorage.
-        webView.settings.domStorageEnabled = true
-        webView.settings.javaScriptEnabled = true
-        CookieManager.getInstance().setAcceptCookie(true)
-
-        webView.webViewClient = object : WebViewClient() {
-            override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
-                if (url != null && url.startsWith(redirectUrl)) {
-                    val uri = Uri.parse(url)
-                    val code = uri.getQueryParameter("code")
-                    val state = uri.getQueryParameter("state")
-                    if (code != null && state != null) {
-                        listener?.onLoginComplete(code, state, this@LoginFragment)
-                    }
-                }
-
-                super.onPageStarted(view, url, favicon)
-            }
-        }
-        webView.loadUrl(authUrl)
-
-        mWebView?.destroy()
-        mWebView = webView
-
-        return view
     }
 
     @Suppress("TooGenericExceptionThrown")
@@ -79,16 +37,6 @@ class LoginFragment : Fragment() {
         listener = null
     }
 
-    override fun onPause() {
-        super.onPause()
-        mWebView?.onPause()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        mWebView?.onResume()
-    }
-
     interface OnLoginCompleteListener {
         fun onLoginComplete(code: String, state: String, fragment: LoginFragment)
     }
@@ -96,13 +44,5 @@ class LoginFragment : Fragment() {
     companion object {
         const val AUTH_URL = "authUrl"
         const val REDIRECT_URL = "redirectUrl"
-
-        fun create(authUrl: String, redirectUrl: String): LoginFragment =
-                LoginFragment().apply {
-                    arguments = Bundle().apply {
-                        putString(AUTH_URL, authUrl)
-                        putString(REDIRECT_URL, redirectUrl)
-                    }
-                }
     }
 }
